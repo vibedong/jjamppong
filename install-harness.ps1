@@ -1,7 +1,10 @@
 param(
     [string]$TargetPath = (Get-Location).Path,
     [string]$SourcePath = "",
-    [string]$ReleaseTag = "harness-v1.0.0",
+    [ValidateSet("Install", "Update", "Repair")]
+    [string]$Mode = "Install",
+    [string]$ReleaseUrl = "https://github.com/vibedong/jjamppong/releases/latest",
+    [string]$ReleaseTag = "harness-v1.0.1",
     [string]$Repository = "vibedong/jjamppong",
     [switch]$Force
 )
@@ -22,7 +25,7 @@ function Write-Utf8NoBom([string]$PathValue, [string]$Content) {
 }
 
 function Write-CanonicalJson([string]$PathValue, $Payload) {
-    $json = $Payload | ConvertTo-Json -Depth 20 -Compress
+    $json = $Payload | ConvertTo-Json -Depth 30 -Compress
     Write-Utf8NoBom -PathValue $PathValue -Content ($json + "`n")
 }
 
@@ -37,16 +40,65 @@ function Get-FileSha256([string]$PathValue) {
     }
 }
 
+function Get-RuntimeTreeSha256([string]$SourceRoot) {
+    $relativeFiles = @(
+        "AGENTS.md",
+        "install-harness.ps1",
+        ".harness/definitions/schemas/handoff-contract.schema.json",
+        ".harness/runtime/START_WORKFLOW_KO.md",
+        ".harness/runtime/WORKFLOW_RULES_KO.md",
+        ".harness/runtime/COMMANDS_KO.md",
+        ".harness/runtime/READ_SET_POLICY_KO.md",
+        "tools/harness-validator/run-doctor.py",
+        "tools/harness-validator/harness_validator/__init__.py",
+        "tools/harness-validator/harness_validator/doctor.py",
+        "tools/harness-validator/harness_validator/runtime_contract.py"
+    )
+    $parts = @()
+    foreach ($relativePath in $relativeFiles) {
+        $path = Join-Path $SourceRoot $relativePath
+        if (Test-Path -LiteralPath $path -PathType Leaf) {
+            $parts += "$relativePath=$(Get-FileSha256 $path)"
+        }
+    }
+    $content = ($parts | Sort-Object) -join "`n"
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($content)
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hash = $sha.ComputeHash($bytes)
+    return (($hash | ForEach-Object { $_.ToString("x2") }) -join "")
+}
+
+function Get-SourceCommit([string]$SourceRoot, [string]$Repo, [string]$Tag) {
+    try {
+        $commit = (git -C $SourceRoot rev-parse HEAD 2>$null)
+        if ($commit -match "^[0-9a-f]{40}$") {
+            return @{ commit = $commit; status = "resolved_from_local_git" }
+        }
+    } catch {}
+    try {
+        $remote = "https://github.com/$Repo.git"
+        $line = (git ls-remote --tags $remote "refs/tags/$Tag" 2>$null | Select-Object -First 1)
+        if ($line -match "^([0-9a-f]{40})") {
+            return @{ commit = $Matches[1]; status = "resolved_from_remote_tag" }
+        }
+    } catch {}
+    return @{ commit = $null; status = "unresolved_with_recorded_asset_hash" }
+}
+
 function Expand-HarnessArchive {
     param([string]$ArchivePath, [string]$DestinationPath)
     Add-Type -AssemblyName System.IO.Compression
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $destinationFullPath = [System.IO.Path]::GetFullPath($DestinationPath)
-    $requiredPrefixes = @(
+    $allowedPrefixes = @(
+        "AGENTS.md",
+        "README.md",
         "install-harness.ps1",
-        "tools/harness-validator/",
+        ".gitignore",
         ".harness/definitions/",
-        "AGENTS.md"
+        ".harness/runtime/",
+        "tools/harness-validator/run-doctor.py",
+        "tools/harness-validator/harness_validator/"
     )
     $zip = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
     try {
@@ -62,7 +114,7 @@ function Expand-HarnessArchive {
             }
             $relativeName = $null
             foreach ($candidateName in $candidateNames) {
-                foreach ($prefix in $requiredPrefixes) {
+                foreach ($prefix in $allowedPrefixes) {
                     if ($prefix.EndsWith("/")) {
                         if ($candidateName.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase)) {
                             $relativeName = $candidateName
@@ -97,72 +149,83 @@ function Expand-HarnessArchive {
     }
 }
 
+function Get-NormalizedReleaseUrl([string]$UrlValue) {
+    if ($UrlValue -match "^github\.com/") {
+        return "https://$UrlValue"
+    }
+    return $UrlValue
+}
+
 function Get-SourceRoot {
-    param([string]$RequestedSourcePath, [string]$RequestedTag, [string]$Repo)
+    param(
+        [string]$RequestedSourcePath,
+        [string]$RequestedTag,
+        [string]$Repo,
+        [string]$UrlValue
+    )
     if ($RequestedSourcePath -and (Test-Path -LiteralPath $RequestedSourcePath -PathType Container)) {
         return (Resolve-Path -LiteralPath $RequestedSourcePath).Path
     }
 
-    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("hi-" + [System.Guid]::NewGuid().ToString("N").Substring(0, 8))
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-" + [System.Guid]::NewGuid().ToString("N").Substring(0, 8))
     New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
-    $archivePath = Join-Path $tempRoot "harness-source.zip"
-    $archiveUrl = "https://github.com/$Repo/archive/refs/tags/$RequestedTag.zip"
+    $archivePath = Join-Path $tempRoot "harness-runtime.zip"
+    $url = Get-NormalizedReleaseUrl $UrlValue
+    if ($url -match "/download/.+\.zip$") {
+        $assetUrl = $url
+    } else {
+        $assetUrl = "https://github.com/$Repo/releases/latest/download/harness-1.0.1-runtime.zip"
+    }
     try {
-        Invoke-WebRequest -Uri $archiveUrl -OutFile $archivePath -UseBasicParsing
+        Invoke-WebRequest -Uri $assetUrl -OutFile $archivePath -UseBasicParsing
     } catch {
         $gh = Get-Command gh -ErrorAction SilentlyContinue
         if (-not $gh) {
-            throw "Could not download Harness source from GitHub. For private repositories, install GitHub CLI and authenticate with 'gh auth login'. Original error: $($_.Exception.Message)"
+            throw "비공개 저장소면 GitHub CLI 설치와 gh auth login이 필요합니다. Public release asset download failed: $($_.Exception.Message)"
         }
-        $releasePattern = "harness-*-runtime.zip"
-        & gh release download $RequestedTag --repo $Repo --pattern $releasePattern --dir $tempRoot --clobber | Out-Null
+        & gh auth status 1>$null 2>$null
         if ($LASTEXITCODE -ne 0) {
-            $releasePattern = "harness-*-source.zip"
-            & gh release download $RequestedTag --repo $Repo --pattern $releasePattern --dir $tempRoot --clobber | Out-Null
+            throw "GitHub 권한 확인이 필요합니다: gh auth login"
         }
+        & gh release download $RequestedTag --repo $Repo --pattern "harness-*-runtime.zip" --dir $tempRoot --clobber | Out-Null
         if ($LASTEXITCODE -ne 0) {
             throw "Could not download Harness release asset with GitHub CLI."
         }
-        $downloadedArchive = Get-ChildItem -LiteralPath $tempRoot -Filter $releasePattern -File | Select-Object -First 1
+        $downloadedArchive = Get-ChildItem -LiteralPath $tempRoot -Filter "harness-*-runtime.zip" -File | Select-Object -First 1
         if (-not $downloadedArchive) {
-            throw "Harness release source asset was not found after GitHub CLI download."
+            throw "Harness runtime asset was not found after GitHub CLI download."
         }
         $archivePath = $downloadedArchive.FullName
     }
     Expand-HarnessArchive -ArchivePath $archivePath -DestinationPath $tempRoot
-    if (Test-Path -LiteralPath (Join-Path $tempRoot "install-harness.ps1") -PathType Leaf) {
-        return $tempRoot
+    if (-not (Test-Path -LiteralPath (Join-Path $tempRoot "install-harness.ps1") -PathType Leaf)) {
+        throw "Harness runtime archive did not contain install-harness.ps1."
     }
-    $sourceDir = Get-ChildItem -LiteralPath $tempRoot -Directory |
-        Where-Object { $_.Name -ne "__MACOSX" -and (Test-Path -LiteralPath (Join-Path $_.FullName "install-harness.ps1") -PathType Leaf) } |
-        Select-Object -First 1
-    if ($sourceDir) {
-        return $sourceDir.FullName
-    }
-    $sourceDir = Get-ChildItem -LiteralPath $tempRoot -Directory | Where-Object { $_.Name -ne "__MACOSX" } | Select-Object -First 1
-    if (-not $sourceDir) {
-        throw "Harness source archive did not contain a source directory."
-    }
-    return $sourceDir.FullName
+    return $tempRoot
 }
 
-function Copy-DirectoryFromSource {
-    param(
-        [string]$SourceRoot,
-        [string]$TargetRoot,
-        [string]$RelativePath,
-        [switch]$AllowExisting
-    )
-    $source = Join-Path $SourceRoot $RelativePath
-    if (-not (Test-Path -LiteralPath $source -PathType Container)) {
+function Copy-DirectoryContents {
+    param([string]$Source, [string]$Target)
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
         return
     }
-    $target = Join-Path $TargetRoot $RelativePath
-    if ((Test-Path -LiteralPath $target) -and (-not $AllowExisting) -and (-not $Force)) {
-        throw "Target already has '$RelativePath'. Re-run with -Force after reviewing the existing files."
+    New-Item -ItemType Directory -Force -Path $Target | Out-Null
+    Get-ChildItem -LiteralPath $Source -Force | ForEach-Object {
+        $dest = Join-Path $Target $_.Name
+        Copy-Item -LiteralPath $_.FullName -Destination $dest -Recurse -Force
     }
-    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
-    Copy-Item -LiteralPath $source -Destination $target -Recurse -Force
+}
+
+function Copy-HarnessRuntimeFiles {
+    param([string]$SourceRoot, [string]$TargetRoot)
+    Copy-Item -LiteralPath (Join-Path $SourceRoot "install-harness.ps1") -Destination (Join-Path $TargetRoot "install-harness.ps1") -Force
+    Copy-DirectoryContents -Source (Join-Path $SourceRoot ".harness/definitions") -Target (Join-Path $TargetRoot ".harness/definitions")
+    Copy-DirectoryContents -Source (Join-Path $SourceRoot ".harness/runtime") -Target (Join-Path $TargetRoot ".harness/runtime")
+    Copy-DirectoryContents -Source (Join-Path $SourceRoot "tools/harness-validator") -Target (Join-Path $TargetRoot "tools/harness-validator")
+    $testsPath = Join-Path (Join-Path $TargetRoot "tools/harness-validator") "tests"
+    if (Test-Path -LiteralPath $testsPath) {
+        Remove-Item -LiteralPath $testsPath -Recurse -Force
+    }
 }
 
 function Install-AgentsRouter {
@@ -176,9 +239,9 @@ function Install-AgentsRouter {
 - Read `.harness/current/status/STATUS_KO.md` first.
 - Read `.harness/manifests/CURRENT_READ_SET.json` for the current stage read set.
 - Treat `.harness/current/source_identity/SOURCE_IDENTITY.json` as the local source identity pointer.
-- Do not use `.harness/archive/` as a primary source.
-- Keep work inside the active Harness stage and gate shown in the status file.
-- Run `python -B -m unittest discover -s tools/harness-validator/tests` before claiming Harness implementation work is complete.
+- Use `.harness/runtime/START_WORKFLOW_KO.md` and `.harness/runtime/WORKFLOW_RULES_KO.md` for the project workflow.
+- Do not use archive, design history, or validator source as default context.
+- Run `python tools/harness-validator/run-doctor.py` before claiming Harness installation or update is complete.
 <!-- harness:end -->
 '@
     if (Test-Path -LiteralPath $agentsPath -PathType Leaf) {
@@ -197,112 +260,134 @@ function Install-AgentsRouter {
     }
 }
 
-$targetRoot = (Resolve-Path -LiteralPath $TargetPath).Path
-$sourceRoot = Get-SourceRoot -RequestedSourcePath $SourcePath -RequestedTag $ReleaseTag -Repo $Repository
+function Write-InstalledState {
+    param(
+        [string]$TargetRoot,
+        [string]$SourceRoot,
+        [string]$InstallResult,
+        [string]$ModeValue,
+        [string]$UrlValue,
+        [string]$Repo,
+        [string]$Tag,
+        $PreviousIdentity
+    )
+    $statusText = @(
+        '# Harness 상태',
+        '',
+        'Harness 1.0 runtime 설치 완료.',
+        '',
+        '- 현재 단계: R00 Install Check 완료',
+        '- 다음 단계: R01 Product Goal Intake',
+        '- 다음 행동: 사용자가 만들 제품의 목표를 말하면 먼저 목표와 제약을 정리하고 확인 질문을 만든다.',
+        '- 제품 코드 구현: R08 Implementation Start Approval 전까지 금지',
+        '- 공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
+    ) -join [Environment]::NewLine
+    Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/status/STATUS_KO.md") -Content $statusText
 
-Copy-DirectoryFromSource -SourceRoot $sourceRoot -TargetRoot $targetRoot -RelativePath "tools/harness-validator" -AllowExisting:$Force
-Copy-DirectoryFromSource -SourceRoot $sourceRoot -TargetRoot $targetRoot -RelativePath ".harness/definitions" -AllowExisting:$true
+    $startHere = @(
+        '# Harness 시작',
+        '',
+        '1. `.harness/current/status/STATUS_KO.md`를 먼저 읽는다.',
+        '2. `.harness/manifests/CURRENT_READ_SET.json`의 파일만 우선 읽는다.',
+        '3. `.harness/runtime/START_WORKFLOW_KO.md`에 따라 제품 목표를 정리한다.',
+        '4. 구현 시작 승인 전에는 제품 코드를 만들지 않는다.'
+    ) -join [Environment]::NewLine
+    Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/navigation/START_HERE.md") -Content $startHere
+
+    $readSet = [ordered]@{
+        artifact_id = "harness.current_read_set"
+        artifact_version = "1.0.1"
+        stage = "installed_project_start"
+        language = "ko"
+        paths = @(
+            [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },
+            [ordered]@{ path = ".harness/current/navigation/START_HERE.md"; purpose_ko = "시작 안내" },
+            [ordered]@{ path = ".harness/runtime/START_WORKFLOW_KO.md"; purpose_ko = "workflow 시작 규칙" },
+            [ordered]@{ path = ".harness/runtime/WORKFLOW_RULES_KO.md"; purpose_ko = "stage 순서와 금지선" },
+            [ordered]@{ path = ".harness/runtime/READ_SET_POLICY_KO.md"; purpose_ko = "xhigh read set 정책" },
+            [ordered]@{ path = ".harness/current/source_identity/SOURCE_IDENTITY.json"; purpose_ko = "설치 출처" }
+        )
+    }
+    Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/manifests/CURRENT_READ_SET.json") -Payload $readSet
+
+    $commitInfo = Get-SourceCommit -SourceRoot $SourceRoot -Repo $Repo -Tag $Tag
+    $identity = [ordered]@{
+        artifact_id = "harness.installed_source_identity"
+        artifact_version = "1.0.1"
+        source_repository = "https://github.com/$Repo"
+        release_url = (Get-NormalizedReleaseUrl $UrlValue)
+        release_tag = $Tag
+        source_commit = $commitInfo.commit
+        source_commit_status = $commitInfo.status
+        installer_sha256 = Get-FileSha256 (Join-Path $TargetRoot "install-harness.ps1")
+        runtime_asset_sha256 = Get-RuntimeTreeSha256 $SourceRoot
+        install_mode = $ModeValue
+        install_result = $InstallResult
+        installed_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        install_root = Convert-ToPosixPath $TargetRoot
+        previous_identity = $PreviousIdentity
+    }
+    Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/current/source_identity/SOURCE_IDENTITY.json") -Payload $identity
+
+    $installRecord = [ordered]@{
+        artifact_id = "harness.install_record"
+        artifact_version = "1.0.1"
+        install_result = $InstallResult
+        install_mode = $ModeValue
+        release_tag = $Tag
+        source_repository = "https://github.com/$Repo"
+        target_path = Convert-ToPosixPath $TargetRoot
+        recorded_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    }
+    Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/evidence/install/INSTALL_RECORD_V1_0.json") -Payload $installRecord
+}
+
+if (-not (Test-Path -LiteralPath $TargetPath -PathType Container)) {
+    New-Item -ItemType Directory -Force -Path $TargetPath | Out-Null
+}
+$targetRoot = (Resolve-Path -LiteralPath $TargetPath).Path
+$sourceRoot = Get-SourceRoot -RequestedSourcePath $SourcePath -RequestedTag $ReleaseTag -Repo $Repository -UrlValue $ReleaseUrl
 
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/current/status") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/current/navigation") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/current/source_identity") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/manifests") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/evidence/install") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/artifacts") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/decisions") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/reviews") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/approvals") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/policies") | Out-Null
-New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/archive") | Out-Null
 
-Install-AgentsRouter -TargetRoot $targetRoot
-
-$statusText = @(
-    '# Harness 상태',
-    '',
-    'Harness 1.0 설치 완료.',
-    '',
-    '- 현재 단계: 프로젝트 시작 준비',
-    '- 다음 행동: Codex에게 만들 제품의 목표를 설명하고 Harness 단계 진행을 요청한다.',
-    '- Implementation Entry Gate: closed',
-    '- 제품 코드 구현: 아직 시작하지 않음',
-    '- 공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
-) -join [Environment]::NewLine
-$statusPath = [System.IO.Path]::Combine($targetRoot, ".harness", "current", "status", "STATUS_KO.md")
-Write-Utf8NoBom -PathValue $statusPath -Content $statusText
-
-$startHere = @(
-    '# Harness 시작',
-    '',
-    '1. `.harness/current/status/STATUS_KO.md`를 먼저 읽는다.',
-    '2. `.harness/manifests/CURRENT_READ_SET.json`의 read set만 우선 읽는다.',
-    '3. 승인된 단계 밖 구현이나 secret 저장은 하지 않는다.'
-) -join [Environment]::NewLine
-Write-Utf8NoBom -PathValue (Join-Path $targetRoot ".harness/current/navigation/START_HERE.md") -Content $startHere
-
-$readSet = [ordered]@{
-    artifact_id = "harness.current_read_set"
-    artifact_version = "1.0"
-    stage = "installed_project_start"
-    language = "ko"
-    paths = @(
-        [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },
-        [ordered]@{ path = ".harness/current/navigation/START_HERE.md"; purpose_ko = "시작 안내" },
-        [ordered]@{ path = ".harness/current/source_identity/SOURCE_IDENTITY.json"; purpose_ko = "설치 출처" },
-        [ordered]@{ path = ".harness/definitions/schemas/handoff-contract.schema.json"; purpose_ko = "handoff contract schema" },
-        [ordered]@{ path = "tools/harness-validator/harness_validator"; purpose_ko = "Harness validator runtime" }
-    )
-}
-Write-CanonicalJson -PathValue (Join-Path $targetRoot ".harness/manifests/CURRENT_READ_SET.json") -Payload $readSet
-
-$sourceCommit = $null
-try {
-    $sourceCommit = (git -C $sourceRoot rev-parse HEAD 2>$null)
-} catch {
-    $sourceCommit = $null
-}
-
-$sourceIdentity = [ordered]@{
-    artifact_id = "harness.installed_source_identity"
-    artifact_version = "1.0"
-    source_repository = "https://github.com/$Repository"
-    release_tag = $ReleaseTag
-    source_commit = $sourceCommit
-    installed_at_local = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssK")
-    installer = "install-harness.ps1"
-    install_root = Convert-ToPosixPath $targetRoot
-}
-Write-CanonicalJson -PathValue (Join-Path $targetRoot ".harness/current/source_identity/SOURCE_IDENTITY.json") -Payload $sourceIdentity
-
-$installedFiles = @(
-    "AGENTS.md",
-    ".harness/current/status/STATUS_KO.md",
-    ".harness/current/navigation/START_HERE.md",
-    ".harness/current/source_identity/SOURCE_IDENTITY.json",
-    ".harness/manifests/CURRENT_READ_SET.json",
-    "tools/harness-validator/harness_validator/final_release.py"
-)
-$fileRecords = @()
-foreach ($relativePath in $installedFiles) {
-    $path = Join-Path $targetRoot $relativePath
-    if (Test-Path -LiteralPath $path -PathType Leaf) {
-        $fileRecords += [ordered]@{
-            path = $relativePath
-            sha256 = Get-FileSha256 $path
-        }
+$identityPath = Join-Path $targetRoot ".harness/current/source_identity/SOURCE_IDENTITY.json"
+$previousIdentity = $null
+if (Test-Path -LiteralPath $identityPath -PathType Leaf) {
+    try {
+        $previousIdentity = Get-Content -Raw -LiteralPath $identityPath | ConvertFrom-Json
+    } catch {
+        $previousIdentity = $null
     }
 }
 
-$installRecord = [ordered]@{
-    artifact_id = "harness.install_record"
-    artifact_version = "1.0"
-    install_result = "pass"
-    release_tag = $ReleaseTag
-    source_repository = "https://github.com/$Repository"
-    target_path = Convert-ToPosixPath $targetRoot
-    installed_files = $fileRecords
+$sameVersion = $false
+if ($previousIdentity -and $previousIdentity.release_tag -eq $ReleaseTag) {
+    $sameVersion = $true
 }
-Write-CanonicalJson -PathValue (Join-Path $targetRoot ".harness/evidence/install/INSTALL_RECORD_V1_0.json") -Payload $installRecord
 
-Write-Output "Harness 1.0 installed into $targetRoot"
-Write-Output "Next: open this folder in Codex and read .harness/current/status/STATUS_KO.md"
+if (($Mode -eq "Install" -or $Mode -eq "Update") -and $sameVersion) {
+    Install-AgentsRouter -TargetRoot $targetRoot
+    Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult "already_up_to_date" -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity
+    Write-Output "already_up_to_date"
+    exit 0
+}
+
+Copy-HarnessRuntimeFiles -SourceRoot $sourceRoot -TargetRoot $targetRoot
+Install-AgentsRouter -TargetRoot $targetRoot
+
+$result = "installed"
+if ($Mode -eq "Update") {
+    $result = "updated"
+} elseif ($Mode -eq "Repair") {
+    $result = "repaired"
+}
+
+Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult $result -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity
+
+Write-Output $result
+Write-Output "Harness 1.0 runtime is ready in $targetRoot"
+Write-Output "Next: run python tools/harness-validator/run-doctor.py"

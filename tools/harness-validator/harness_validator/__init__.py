@@ -1,1 +1,1 @@
-"""Project-local Harness implementation helpers."""
+"""Installed Harness runtime validation helpers."""
