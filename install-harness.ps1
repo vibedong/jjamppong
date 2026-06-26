@@ -221,11 +221,40 @@ function Copy-HarnessRuntimeFiles {
     Copy-Item -LiteralPath (Join-Path $SourceRoot "install-harness.ps1") -Destination (Join-Path $TargetRoot "install-harness.ps1") -Force
     Copy-DirectoryContents -Source (Join-Path $SourceRoot ".harness/definitions") -Target (Join-Path $TargetRoot ".harness/definitions")
     Copy-DirectoryContents -Source (Join-Path $SourceRoot ".harness/runtime") -Target (Join-Path $TargetRoot ".harness/runtime")
+    $validatorTarget = Join-Path $TargetRoot "tools/harness-validator"
+    if (Test-Path -LiteralPath $validatorTarget) {
+        Remove-Item -LiteralPath $validatorTarget -Recurse -Force
+    }
     Copy-DirectoryContents -Source (Join-Path $SourceRoot "tools/harness-validator") -Target (Join-Path $TargetRoot "tools/harness-validator")
     $testsPath = Join-Path (Join-Path $TargetRoot "tools/harness-validator") "tests"
     if (Test-Path -LiteralPath $testsPath) {
         Remove-Item -LiteralPath $testsPath -Recurse -Force
     }
+}
+
+function Test-RuntimeComplete {
+    param([string]$TargetRoot)
+    $required = @(
+        "AGENTS.md",
+        "install-harness.ps1",
+        ".harness/current/status/STATUS_KO.md",
+        ".harness/current/navigation/START_HERE.md",
+        ".harness/current/source_identity/SOURCE_IDENTITY.json",
+        ".harness/manifests/CURRENT_READ_SET.json",
+        ".harness/runtime/START_WORKFLOW_KO.md",
+        ".harness/runtime/WORKFLOW_RULES_KO.md",
+        ".harness/runtime/COMMANDS_KO.md",
+        ".harness/runtime/READ_SET_POLICY_KO.md",
+        "tools/harness-validator/run-doctor.py",
+        "tools/harness-validator/harness_validator/doctor.py",
+        "tools/harness-validator/harness_validator/runtime_contract.py"
+    )
+    foreach ($relativePath in $required) {
+        if (-not (Test-Path -LiteralPath (Join-Path $TargetRoot $relativePath) -PathType Leaf)) {
+            return $false
+        }
+    }
+    return $true
 }
 
 function Install-AgentsRouter {
@@ -311,6 +340,19 @@ function Write-InstalledState {
     Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/manifests/CURRENT_READ_SET.json") -Payload $readSet
 
     $commitInfo = Get-SourceCommit -SourceRoot $SourceRoot -Repo $Repo -Tag $Tag
+    $previousIdentitySummary = $null
+    if ($PreviousIdentity) {
+        $previousIdentitySummary = [ordered]@{
+            release_tag = $PreviousIdentity.release_tag
+            source_commit = $PreviousIdentity.source_commit
+            source_commit_status = $PreviousIdentity.source_commit_status
+            installer_sha256 = $PreviousIdentity.installer_sha256
+            runtime_asset_sha256 = $PreviousIdentity.runtime_asset_sha256
+            install_result = $PreviousIdentity.install_result
+            installed_at_utc = $PreviousIdentity.installed_at_utc
+        }
+    }
+
     $identity = [ordered]@{
         artifact_id = "harness.installed_source_identity"
         artifact_version = "1.0.1"
@@ -325,7 +367,7 @@ function Write-InstalledState {
         install_result = $InstallResult
         installed_at_utc = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
         install_root = Convert-ToPosixPath $TargetRoot
-        previous_identity = $PreviousIdentity
+        previous_identity = $previousIdentitySummary
     }
     Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/current/source_identity/SOURCE_IDENTITY.json") -Payload $identity
 
@@ -369,7 +411,7 @@ if ($previousIdentity -and $previousIdentity.release_tag -eq $ReleaseTag) {
     $sameVersion = $true
 }
 
-if (($Mode -eq "Install" -or $Mode -eq "Update") -and $sameVersion) {
+if (($Mode -eq "Install" -or $Mode -eq "Update") -and $sameVersion -and (Test-RuntimeComplete $targetRoot)) {
     Install-AgentsRouter -TargetRoot $targetRoot
     Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult "already_up_to_date" -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity
     Write-Output "already_up_to_date"

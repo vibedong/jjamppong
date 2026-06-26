@@ -13,7 +13,6 @@ REQUIRED_FILES = (
 
 FORBIDDEN_PREFIXES = (
     "_organized" + "_harness_design/",
-    "tests/",
     "tools/harness-validator/" + "tests/",
     ".harness/archive/",
     ".harness/artifacts/",
@@ -30,11 +29,16 @@ READ_SET_MAX_BYTES = 20 * 1024
 AGENTS_MAX_BYTES = 3 * 1024
 
 SOURCE_IDENTITY_REQUIRED = (
+    "artifact_id",
+    "artifact_version",
     "source_repository",
     "release_url",
     "release_tag",
+    "source_commit_status",
     "installer_sha256",
     "runtime_asset_sha256",
     "install_mode",
     "install_result",
+    "installed_at_utc",
+    "previous_identity",
 )

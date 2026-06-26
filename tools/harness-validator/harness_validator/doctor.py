@@ -92,7 +92,7 @@ def validate_source_identity(root, blockers):
     if not isinstance(payload, dict):
         return
     for key in SOURCE_IDENTITY_REQUIRED:
-        if not payload.get(key):
+        if key not in payload or (key != "previous_identity" and not payload.get(key)):
             add(blockers, "source_identity_missing_field", f"Missing source identity field {key}", posix(path))
     for key in ("installer_sha256", "runtime_asset_sha256"):
         value = payload.get(key)
