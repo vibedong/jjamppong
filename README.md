@@ -1,4 +1,4 @@
-# Harness 1.0.3 Runtime
+# Harness 1.0.4 Runtime
 
 Harness는 Codex 앱에서 프로젝트 폴더 안에 설치해 쓰는 프로젝트 로컬 제작 workflow입니다. 별도 Windows 앱이나 Codex 플러그인이 아닙니다.
 
@@ -26,7 +26,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-harness.ps1 -Mode 
 python tools/harness-validator/run-doctor.py --mode installed-project .
 ```
 
-Harness 1.0.3은 업데이트와 복구 시 현재 기획 단계의 `STATUS_KO.md`와 `CURRENT_READ_SET.json`을 초기 상태로 되돌리지 않습니다. v1.0.2 stage set에서 v1.0.3으로 바뀌며 검토가 필요한 경우 migration evidence를 남기고 자동 stage 이동은 하지 않습니다.
+Harness 1.0.4는 업데이트와 복구 시 현재 기획 단계의 `STATUS_KO.md`와 `CURRENT_READ_SET.json`을 초기 상태로 되돌리지 않습니다. v1.0.2 stage set에서 v1.0.3으로 바뀌며 검토가 필요한 경우 migration evidence를 남기고 자동 stage 이동은 하지 않습니다.
 
 ## 설치 후 workflow
 

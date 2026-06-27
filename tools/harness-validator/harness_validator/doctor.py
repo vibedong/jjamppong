@@ -12,6 +12,8 @@ RELEASE_FORBIDDEN_PREFIXES = ("docs/", "tests/", "_organized_harness_design/", "
 INSTALLED_FORBIDDEN_PREFIXES = ("_organized_harness_design/", "tools/harness-validator/tests/")
 READ_SET_FORBIDDEN_PREFIXES = ("tools/", "_organized_harness_design/", ".harness/archive/")
 STAGE_RE = re.compile(r"\bR(0[1-9]|10)\b")
+STAGE_ORDER = {stage["stage_id"]: index for index, stage in enumerate(STAGES)}
+STAGE_ARTIFACTS = {stage["stage_id"]: stage["artifact_path"] for stage in STAGES}
 
 
 def utc_now():
@@ -72,6 +74,21 @@ def add_read_set_blockers(root, blockers):
             blockers.append(blocker("doctor.read_set_directory_path", normalized))
 
 
+def get_status_stage(root):
+    status = Path(root) / ".harness/current/status/STATUS_KO.md"
+    if not status.is_file():
+        return None
+    match = STAGE_RE.search(status.read_text(encoding="utf-8"))
+    return match.group(0) if match else None
+
+
+def get_read_set_payload(root):
+    path = Path(root) / ".harness/manifests/CURRENT_READ_SET.json"
+    if not path.is_file():
+        return None
+    return read_json(path)
+
+
 def add_status_blockers(root, blockers):
     status = Path(root) / ".harness/current/status/STATUS_KO.md"
     if not status.is_file():
@@ -82,6 +99,27 @@ def add_status_blockers(root, blockers):
         blockers.append(blocker("doctor.stage_set_version_missing", ".harness/current/status/STATUS_KO.md"))
     if not STAGE_RE.search(text):
         blockers.append(blocker("doctor.stage_token_missing", ".harness/current/status/STATUS_KO.md"))
+
+
+def add_state_consistency_blockers(root, blockers):
+    status_stage = get_status_stage(root)
+    read_set = get_read_set_payload(root)
+    if not status_stage or not read_set:
+        return
+    read_set_stage = read_set.get("stage")
+    if read_set_stage and read_set_stage != status_stage:
+        blockers.append(blocker("doctor.status_read_set_stage_mismatch", ".harness/manifests/CURRENT_READ_SET.json", {"status_stage": status_stage, "read_set_stage": read_set_stage}))
+    if read_set.get("stage_set_version") != "harness-stage-set-v1.0.3":
+        blockers.append(blocker("doctor.read_set_stage_set_version_missing", ".harness/manifests/CURRENT_READ_SET.json"))
+    current_stage = read_set_stage or status_stage
+    current_index = STAGE_ORDER.get(current_stage)
+    if current_index is None or current_index < 1:
+        return
+    paths = {value.replace("\\", "/") for value in read_set_paths(read_set)}
+    for stage in STAGES[:current_index]:
+        artifact = stage["artifact_path"]
+        if (Path(root) / artifact).is_file() and artifact not in paths:
+            blockers.append(blocker("doctor.read_set_missing_previous_planning_artifact", ".harness/manifests/CURRENT_READ_SET.json", {"stage": current_stage, "missing": artifact}))
 
 
 def add_stage_asset_blockers(root, blockers):
@@ -144,6 +182,19 @@ def add_gate_blockers(root, blockers):
         blockers.append(blocker("doctor.ready_to_start_gate_mismatch", ".harness/current/gate/GATE_STATE.json"))
 
 
+def implementation_start_possible(root, blockers, mode):
+    if mode != "installed-project" or blockers:
+        return False
+    path = Path(root) / ".harness/current/gate/GATE_STATE.json"
+    if not path.is_file():
+        return False
+    try:
+        payload = read_json(path)
+    except Exception:
+        return False
+    return payload.get("gate_status") == "open_for_exact_batch" and bool(payload.get("open_work_unit_ids"))
+
+
 def add_hil_mixing_blockers(root, blockers):
     current = Path(root) / ".harness/current"
     if not current.exists():
@@ -162,6 +213,7 @@ def validate(root, mode="installed-project"):
     if mode == "installed-project":
         add_read_set_blockers(root, blockers)
         add_status_blockers(root, blockers)
+        add_state_consistency_blockers(root, blockers)
         add_stage_asset_blockers(root, blockers)
         add_domain_trace_blockers(root, blockers)
         add_external_review_blockers(root, blockers)
@@ -174,6 +226,8 @@ def validate(root, mode="installed-project"):
     read_set_file = root / ".harness/manifests/CURRENT_READ_SET.json"
     read_paths = read_set_paths(read_json(read_set_file)) if read_set_file.is_file() else []
     payload_hash = hashlib.sha256("\n".join(release_files).encode("utf-8")).hexdigest()
+    can_start_implementation = implementation_start_possible(root, blockers, mode)
+    state_conflict_codes = ("doctor.gate_ready_conflict", "doctor.ready_to_start_gate_mismatch", "doctor.status_read_set_stage_mismatch", "doctor.read_set_stage_set_version_missing")
     return {
         "schema_version": "1.0",
         "command": "doctor",
@@ -184,7 +238,7 @@ def validate(root, mode="installed-project"):
         "warnings": [],
         "metrics": {"checked_files": sum(1 for _ in iter_files(root))},
         "high_finding_count": 0,
-        "korean_summary": {"one_line": "통과" if not blockers else "차단 항목 있음", "blocker_count": len(blockers), "high_finding_count": 0, "implementation_start_possible": mode == "installed-project" and not blockers, "next_action": "없음" if not blockers else "blocker를 수정한 뒤 doctor를 다시 실행"},
+        "korean_summary": {"one_line": "통과" if not blockers else "차단 항목 있음", "blocker_count": len(blockers), "high_finding_count": 0, "implementation_start_possible": can_start_implementation, "next_action": "없음" if not blockers else "blocker를 수정한 뒤 doctor를 다시 실행"},
         "release_files": release_files if mode == "release-payload" else [],
         "forbidden_files": forbidden_files,
         "payload_hash": payload_hash if mode == "release-payload" else None,
@@ -192,7 +246,7 @@ def validate(root, mode="installed-project"):
         "stage": stage_match.group(0) if stage_match else None,
         "stage_set_version": "harness-stage-set-v1.0.3" if "harness-stage-set-v1.0.3" in status_text else None,
         "read_set_paths": read_paths,
-        "state_conflicts": [item for item in blockers if item["code"] in ("doctor.gate_ready_conflict", "doctor.ready_to_start_gate_mismatch")],
+        "state_conflicts": [item for item in blockers if item["code"] in state_conflict_codes],
         "path_policy_findings": [item for item in blockers if item["code"].startswith("doctor.read_set_")],
         "exit_code": 0 if not blockers else 1,
         "checked_at_utc": utc_now(),

@@ -1,7 +1,7 @@
 from harness_validator.stage_assets import STAGES
 
 
-HARNESS_RUNTIME_VERSION = "1.0.3"
+HARNESS_RUNTIME_VERSION = "1.0.4"
 STAGE_SET_VERSION = "harness-stage-set-v1.0.3"
 CURRENT_READ_SET_SCHEMA_VERSION = "1.0"
 DOCTOR_MODES = ("release-payload", "installed-project")

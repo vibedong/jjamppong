@@ -24,7 +24,7 @@ class ReleaseSurfaceTests(unittest.TestCase):
             target.mkdir()
             result = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "install-harness.ps1"), "-Mode", "Preview", "-TargetPath", str(target), "-SourcePath", str(ROOT), "-ReleaseUrl", "github.com/vibedong/jjamppong/releases/latest"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn("harness-v1.0.3", result.stdout)
+            self.assertIn("harness-v1.0.4", result.stdout)
 
     def test_update_accepts_github_shorthand_without_state_loss(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -52,6 +52,15 @@ class InstalledWorkflowTests(unittest.TestCase):
             self.assertEqual(payload["user_input"], "나는 소규모 제조/수리 업체용 작업 접수·진행 상태 관리 웹앱을 만들고 싶어. 고객이 작업을 접수하고, 직원이 상태를 바꾸고, 메모를 남기고, 완료 기록을 볼 수 있으면 돼. Harness 기준으로 처음부터 진행해줘.")
             self.assertEqual(len(payload["stage_transitions"]), 9)
             self.assertEqual(len(payload["read_set_changes"]), 9)
+            created_by_stage = {}
+            for transition in payload["stage_transitions"]:
+                created_by_stage[transition["stage"]] = transition["artifact"]
+            for change in payload["read_set_changes"]:
+                if change["stage"] == "R01":
+                    continue
+                previous = [artifact for stage, artifact in created_by_stage.items() if stage < change["stage"]]
+                for artifact in previous:
+                    self.assertIn(artifact, change["paths"])
             self.assertTrue(payload["implementation_blocked_before_gate"])
             self.assertFalse((target / "src").exists())
             self.assertTrue((target / ".harness/evidence/external-skills").is_dir())

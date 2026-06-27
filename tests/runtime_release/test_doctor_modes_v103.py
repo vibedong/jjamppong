@@ -25,6 +25,7 @@ class DoctorModesTests(unittest.TestCase):
             result = validate(target, mode="installed-project")
             self.assertEqual(result["overall_status"], "pass", result)
             self.assertEqual(result["exit_code"], 0)
+            self.assertFalse(result["korean_summary"]["implementation_start_possible"])
 
     def test_release_payload_rejects_generated_state_and_tests(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -53,6 +54,7 @@ class DoctorModesTests(unittest.TestCase):
             for key in ("schema_version", "command", "overall_status", "blocker_count", "blockers", "warnings", "exit_code", "checked_at_utc", "korean_summary", "stage", "stage_set_version", "read_set_paths", "state_conflicts", "path_policy_findings"):
                 self.assertIn(key, payload)
             self.assertIn("implementation_start_possible", payload["korean_summary"])
+            self.assertFalse(payload["korean_summary"]["implementation_start_possible"])
 
     def test_installed_project_detects_workflow_policy_violations(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -72,6 +74,44 @@ class DoctorModesTests(unittest.TestCase):
             self.assertIn("doctor.domain_trace_missing", codes)
             self.assertIn("doctor.superpowers_timing_violation", codes)
             self.assertIn("doctor.gate_ready_conflict", codes)
+
+    def test_installed_project_detects_status_read_set_stage_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+            self.install_project(target)
+            (target / ".harness/current/status/STATUS_KO.md").write_text(
+                "# Harness 상태\n\nCurrent stage: R03 Product Scope\nStage set version: harness-stage-set-v1.0.3\nImplementation Entry Gate: closed\n",
+                encoding="utf-8",
+            )
+            (target / ".harness/manifests/CURRENT_READ_SET.json").write_text(
+                '{"stage":"R01","stage_set_version":"harness-stage-set-v1.0.3","paths":[{"path":".harness/current/status/STATUS_KO.md"}]}\n',
+                encoding="utf-8",
+            )
+            result = validate(target, mode="installed-project")
+            codes = {b["code"] for b in result["blockers"]}
+            self.assertIn("doctor.status_read_set_stage_mismatch", codes)
+            self.assertTrue(result["state_conflicts"])
+
+    def test_installed_project_detects_missing_previous_planning_artifacts_in_read_set(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+            self.install_project(target)
+            (target / ".harness/current/status/STATUS_KO.md").write_text(
+                "# Harness 상태\n\nCurrent stage: R03 Product Scope\nStage set version: harness-stage-set-v1.0.3\nImplementation Entry Gate: closed\n",
+                encoding="utf-8",
+            )
+            (target / ".harness/current/planning/PRODUCT_GOAL_INTAKE.md").parent.mkdir(parents=True, exist_ok=True)
+            (target / ".harness/current/planning/PRODUCT_GOAL_INTAKE.md").write_text("# Product Goal\n", encoding="utf-8")
+            (target / ".harness/current/planning/DOMAIN_FOUNDATION.md").write_text("# Domain Foundation\n", encoding="utf-8")
+            (target / ".harness/manifests/CURRENT_READ_SET.json").write_text(
+                '{"stage":"R03","stage_set_version":"harness-stage-set-v1.0.3","paths":[{"path":".harness/current/status/STATUS_KO.md"},{"path":".harness/current/planning/PRODUCT_SCOPE.md"}]}\n',
+                encoding="utf-8",
+            )
+            result = validate(target, mode="installed-project")
+            codes = {b["code"] for b in result["blockers"]}
+            self.assertIn("doctor.read_set_missing_previous_planning_artifact", codes)
 
 
 if __name__ == "__main__":

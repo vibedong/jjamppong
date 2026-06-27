@@ -11,7 +11,7 @@ class ContractAndAssetsTests(unittest.TestCase):
     def test_runtime_contract_v103(self):
         from harness_validator import runtime_contract as c
 
-        self.assertEqual(c.HARNESS_RUNTIME_VERSION, "1.0.3")
+        self.assertEqual(c.HARNESS_RUNTIME_VERSION, "1.0.4")
         self.assertEqual(c.STAGE_SET_VERSION, "harness-stage-set-v1.0.3")
         self.assertEqual(tuple(c.PLANNING_STAGE_FILES), ("R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10"))
         self.assertEqual(c.PLANNING_STAGE_FILES["R06"], ".harness/current/planning/TECHNICAL_ARCHITECTURE.md")
