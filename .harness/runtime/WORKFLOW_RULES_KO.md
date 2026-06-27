@@ -52,3 +52,19 @@ R09 Implementation Execution:
 - 업데이트와 복구는 이미 진행 중인 `.harness/current/status/STATUS_KO.md`와 `.harness/manifests/CURRENT_READ_SET.json`을 초기 R00 상태로 되돌아가면 안 된다.
 - planning 산출물이 있는데 상태가 R00이면 상태 충돌이다.
 - read set stage와 STATUS의 현재 단계가 다르면 상태 충돌이다.
+
+## External Skill Evidence
+
+외부 skill은 Harness 내부에 복사하지 않는다.
+사용, 생략, fallback은 `.harness/evidence/external-skills/`에 기록한다.
+Superpowers는 R10에서 Gate가 열린 뒤에만 실행한다.
+
+## Review Evidence
+
+중요 산출물은 Objective Rule Check 뒤 Codex 독립 검토와 필요한 gstack findings-only 검토를 기록한다.
+검토자는 산출물을 직접 수정하지 않고 Stage 이동이나 승인을 대신하지 않는다.
+
+## Token Quality And Harness Improvement Loop
+
+단순 요청에서 불필요한 대형 read set을 사용하면 token-quality evidence와 HIL candidate를 record-only로 남긴다.
+HIL candidate는 사용자 제품 산출물을 변경하지 않는다.
