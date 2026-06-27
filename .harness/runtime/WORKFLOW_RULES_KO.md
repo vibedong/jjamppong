@@ -28,20 +28,24 @@ R05 Behavior Specification:
 
 - 명령, Query, 상태, 이벤트, 예외, 승인 흐름을 Behavior Specification 문서로 만든다.
 
-R06 Development Plan:
+R06 Technical Architecture:
+
+- 구현 가능한 기술 구조, 상태 모델, 검증 모델, 보안 경계, migration 정책을 만든다.
+
+R07 Development Plan:
 
 - 구현 계획, 테스트 기준, rollback 기준을 만든다.
 
-R07 Work Units:
+R08 Work Units:
 
 - fresh implementation agent가 독립적으로 실행할 Work Units를 만든다.
 
-R08 Implementation Start Approval:
+R09 Implementation Entry:
 
 - Domain Foundation, Product Scope, User Experience, Behavior Specification, Development Plan, Work Units가 준비되기 전에는 구현 시작 승인을 열지 않는다.
 - 구현 시작 승인 전 제품 코드는 금지한다.
 
-R09 Implementation Execution:
+R10 Implementation Execution:
 
 - 승인된 Work Units 기준으로만 코드 작성과 테스트를 진행한다.
 
@@ -52,3 +56,19 @@ R09 Implementation Execution:
 - 업데이트와 복구는 이미 진행 중인 `.harness/current/status/STATUS_KO.md`와 `.harness/manifests/CURRENT_READ_SET.json`을 초기 R00 상태로 되돌아가면 안 된다.
 - planning 산출물이 있는데 상태가 R00이면 상태 충돌이다.
 - read set stage와 STATUS의 현재 단계가 다르면 상태 충돌이다.
+
+## External Skill Evidence
+
+외부 skill은 Harness 내부에 복사하지 않는다.
+사용, 생략, fallback은 `.harness/evidence/external-skills/`에 기록한다.
+Superpowers는 R10에서 Gate가 열린 뒤에만 실행한다.
+
+## Review Evidence
+
+중요 산출물은 Objective Rule Check 뒤 Codex 독립 검토와 필요한 gstack findings-only 검토를 기록한다.
+검토자는 산출물을 직접 수정하지 않고 Stage 이동이나 승인을 대신하지 않는다.
+
+## Token Quality And Harness Improvement Loop
+
+단순 요청에서 불필요한 대형 read set을 사용하면 token-quality evidence와 HIL candidate를 record-only로 남긴다.
+HIL candidate는 사용자 제품 산출물을 변경하지 않는다.
