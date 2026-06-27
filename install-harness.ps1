@@ -66,6 +66,30 @@ function Get-RequestedTagFromUrl {
     return $null
 }
 
+function Get-GitHubUrlInfo {
+    param([string]$Url)
+    if ([string]::IsNullOrWhiteSpace($Url)) { return $null }
+    $trimmed = $Url.Trim()
+    if ($trimmed -match "^github\.com/") {
+        $trimmed = "https://$trimmed"
+    }
+    if ($trimmed -notmatch "^https://github\.com/([^/]+)/([^/?#]+)") {
+        throw "Unsupported GitHubUrl: $Url"
+    }
+    $owner = $Matches[1]
+    $repo = $Matches[2] -replace "\.git$", ""
+    $tag = Get-RequestedTagFromUrl -Url $trimmed
+    $latest = ($trimmed -match "/releases/latest/?($|[?#])")
+    return [ordered]@{
+        owner = $owner
+        repo = $repo
+        api_repo = "$owner/$repo"
+        repository = "https://github.com/$owner/$repo"
+        requested_tag = $tag
+        latest = $latest
+    }
+}
+
 function Test-HarnessInstalled {
     param([string]$Root)
     return (Test-Path -LiteralPath (Join-Path $Root ".harness/current/status/STATUS_KO.md") -PathType Leaf)
@@ -171,18 +195,28 @@ function Resolve-GitHubReleaseSource {
         [string]$Url,
         [string]$AssetPath,
         [string]$ManifestPath
-    )
+)
     if ([string]::IsNullOrWhiteSpace($Url)) { return $null }
+    $urlInfo = Get-GitHubUrlInfo -Url $Url
     if ([string]::IsNullOrWhiteSpace($AssetPath) -or [string]::IsNullOrWhiteSpace($ManifestPath)) {
-        throw "GitHubUrl install requires ReleaseAssetPath and ReleaseManifestPath in this runtime candidate."
+        $downloaded = Resolve-GitHubReleaseAssets -UrlInfo $urlInfo
+        $AssetPath = [string]$downloaded.release_asset_path
+        $ManifestPath = [string]$downloaded.release_manifest_path
     }
     if (-not (Test-Path -LiteralPath $AssetPath -PathType Leaf)) { throw "Release asset is missing: $AssetPath" }
     if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) { throw "Release manifest is missing: $ManifestPath" }
 
     $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $requestedTag = Get-RequestedTagFromUrl -Url $Url
+    $manifestRepository = Normalize-Repository -Value ([string]$manifest.source_repository)
+    if ($manifestRepository -ne [string]$urlInfo.repository) {
+        throw "GitHub repository mismatch: requested '$($urlInfo.repository)' but manifest repository '$manifestRepository'"
+    }
+    $requestedTag = [string]$urlInfo.requested_tag
     if ($requestedTag -and $requestedTag -ne $manifest.release_tag) {
         throw "GitHub release tag mismatch: requested tag '$requestedTag' but manifest tag '$($manifest.release_tag)'"
+    }
+    if ($downloaded -and $downloaded.release_tag -and ([string]$downloaded.release_tag) -ne ([string]$manifest.release_tag)) {
+        throw "GitHub release API tag mismatch: release '$($downloaded.release_tag)' but manifest tag '$($manifest.release_tag)'"
     }
     $assetHash = Get-FileSha256 -Path $AssetPath
     if ($assetHash -ne ([string]$manifest.release_asset_sha256).ToLowerInvariant()) {
@@ -196,15 +230,52 @@ function Resolve-GitHubReleaseSource {
     if ($artifactHash -ne ([string]$manifest.runtime_artifact_sha256).ToLowerInvariant()) {
         throw "Runtime artifact SHA-256 does not match release manifest."
     }
-    $repo = Normalize-Repository -Value ([string]$manifest.source_repository)
     return [ordered]@{
         source_root = $tempRoot
-        source_repository = $repo
+        source_repository = $manifestRepository
         release_tag = [string]$manifest.release_tag
         immutable_commit = [string]$manifest.immutable_commit
         artifact_sha256 = $artifactHash
         source_identity_status = "resolved"
         from_release_manifest = $true
+    }
+}
+
+function Resolve-GitHubReleaseAssets {
+    param([object]$UrlInfo)
+    if ($null -eq $UrlInfo) { throw "GitHubUrl information is missing." }
+    $apiBase = $env:HARNESS_GITHUB_API_BASE_URL
+    if ([string]::IsNullOrWhiteSpace($apiBase)) {
+        $apiBase = "https://api.github.com"
+    }
+    $apiBase = $apiBase.TrimEnd("/")
+    if ($UrlInfo.requested_tag) {
+        $apiUrl = "$apiBase/repos/$($UrlInfo.api_repo)/releases/tags/$($UrlInfo.requested_tag)"
+    } else {
+        $apiUrl = "$apiBase/repos/$($UrlInfo.api_repo)/releases/latest"
+    }
+    $headers = @{ "User-Agent" = "Harness-Installer/1.0.5" }
+    $response = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing -Headers $headers
+    $release = $response.Content | ConvertFrom-Json
+    $assets = @($release.assets)
+    $zipAsset = @($assets | Where-Object { $_.name -eq "harness-runtime-v1.0.5.zip" })[0]
+    if (-not $zipAsset) {
+        $zipAsset = @($assets | Where-Object { $_.name -like "harness-runtime-v*.zip" })[0]
+    }
+    $manifestAsset = @($assets | Where-Object { $_.name -eq "HARNESS_RELEASE_MANIFEST_V1_0_5.json" })[0]
+    if (-not $zipAsset) { throw "GitHub release asset harness-runtime-v1.0.5.zip was not found." }
+    if (-not $manifestAsset) { throw "GitHub release manifest HARNESS_RELEASE_MANIFEST_V1_0_5.json was not found." }
+
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-download-" + [System.Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    $assetPath = Join-Path $tempRoot ([string]$zipAsset.name)
+    $manifestPath = Join-Path $tempRoot ([string]$manifestAsset.name)
+    Invoke-WebRequest -Uri ([string]$zipAsset.browser_download_url) -OutFile $assetPath -UseBasicParsing -Headers $headers
+    Invoke-WebRequest -Uri ([string]$manifestAsset.browser_download_url) -OutFile $manifestPath -UseBasicParsing -Headers $headers
+    return [ordered]@{
+        release_asset_path = $assetPath
+        release_manifest_path = $manifestPath
+        release_tag = [string]$release.tag_name
     }
 }
 
