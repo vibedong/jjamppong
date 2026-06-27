@@ -1,0 +1,14 @@
+{
+  "artifact_id": "harness.v1_0_5.spec_approval_binding",
+  "artifact_version": "1.0",
+  "approved_spec_path": "F:/jjamppong/PRIVATE_HARNESS_CONTEXT/HARNESS_V1_0_5_RUNTIME_WORKFLOW_SAFETY_SPEC_DRAFT_KO.md",
+  "approved_spec_sha256": "8282D85591C1987FB57ABEA4FCBCA870E706E5B95808EE6F774F98561030123C",
+  "approval_record_path": "F:/jjamppong/PRIVATE_HARNESS_CONTEXT/HARNESS_V1_0_5_SPEC_APPROVAL_RECORD_KO.md",
+  "approval_record_sha256": "87CB0E4494B4ADA25B3F6090BF904B3235A2582B9ADD4FF26FC42A6667E16358",
+  "response_matrix_sha256": "CD5F9FD274E8DF4F05C9FD799BBC8F090FC51C73A0F706DE62138736C9B3AB76",
+  "verified_against_user_approval": true,
+  "exception_policy": "no conservative-default exceptions allowed",
+  "writing_plan_allowed": true,
+  "implementation_requires_plan_execution_request": true,
+  "runtime_export_excluded": true
+}

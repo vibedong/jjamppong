@@ -1,0 +1,11 @@
+{
+  "artifact_id": "harness.v1_0_5.implementation_baseline",
+  "artifact_version": "1.0",
+  "branch": "codex/harness-v1-0-5-runtime-workflow-safety",
+  "head": "b47b109f599d9fd0bd8bdf5e2a0f4474d9461bd7",
+  "status_short": [
+    "?? tests/"
+  ],
+  "baseline_recorded": true,
+  "runtime_export_excluded": true
+}
