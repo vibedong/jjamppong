@@ -1,3 +1,13 @@
+from harness_validator.stage_assets import STAGES
+
+
+HARNESS_RUNTIME_VERSION = "1.0.3"
+STAGE_SET_VERSION = "harness-stage-set-v1.0.3"
+CURRENT_READ_SET_SCHEMA_VERSION = "1.0"
+DOCTOR_MODES = ("release-payload", "installed-project")
+READ_SET_MAX_BYTES = 20 * 1024
+AGENTS_MAX_BYTES = 3 * 1024
+
 REQUIRED_FILES = (
     "AGENTS.md",
     "install-harness.ps1",
@@ -11,22 +21,34 @@ REQUIRED_FILES = (
     ".harness/runtime/READ_SET_POLICY_KO.md",
 )
 
-FORBIDDEN_PREFIXES = (
+RELEASE_PAYLOAD_FORBIDDEN_PREFIXES = (
     "_organized" + "_harness_design/",
-    "tools/harness-validator/" + "tests/",
+    "docs/",
+    "tests/",
     ".harness/archive/",
     ".harness/artifacts/",
     ".harness/reviews/",
     ".harness/approvals/",
 )
 
+INSTALLED_PROJECT_FORBIDDEN_PREFIXES = (
+    "_organized" + "_harness_design/",
+    "tools/harness-validator/" + "tests/",
+    ".harness/archive/",
+)
+
+READ_SET_FORBIDDEN_PREFIXES = (
+    "tools/",
+    "_organized" + "_harness_design/",
+    ".harness/archive/",
+)
+
+FORBIDDEN_PREFIXES = INSTALLED_PROJECT_FORBIDDEN_PREFIXES
+
 FORBIDDEN_NAME_MARKERS = (
     "GPT" + "_PRO",
     "HARNESS" + "_1_0_RUNTIME_SIMULATION_AUDIT",
 )
-
-READ_SET_MAX_BYTES = 20 * 1024
-AGENTS_MAX_BYTES = 3 * 1024
 
 SOURCE_IDENTITY_REQUIRED = (
     "artifact_id",
@@ -43,15 +65,5 @@ SOURCE_IDENTITY_REQUIRED = (
     "previous_identity",
 )
 
-PLANNING_STAGE_FILES = {
-    "R01": ".harness/current/planning/PRODUCT_GOAL_INTAKE.md",
-    "R02": ".harness/current/planning/DOMAIN_FOUNDATION.md",
-    "R03": ".harness/current/planning/PRODUCT_SCOPE.md",
-    "R04": ".harness/current/planning/USER_EXPERIENCE.md",
-    "R05": ".harness/current/planning/BEHAVIOR_SPECIFICATION.md",
-    "R06": ".harness/current/planning/DEVELOPMENT_PLAN.md",
-    "R07": ".harness/current/planning/WORK_UNITS.md",
-    "R08": ".harness/current/planning/IMPLEMENTATION_START_APPROVAL_REQUEST.md",
-}
-
+PLANNING_STAGE_FILES = {stage["stage_id"]: stage["artifact_path"] for stage in STAGES}
 PLANNING_STAGE_ORDER = tuple(PLANNING_STAGE_FILES)
