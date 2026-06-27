@@ -1,7 +1,7 @@
 # Harness 현재 상태
 
 artifact_id: harness.current_status
-artifact_version: 1.0.5
+artifact_version: 1.0.6
 status_source_of_truth: true
 
 ## 현재 상태

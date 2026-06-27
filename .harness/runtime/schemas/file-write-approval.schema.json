@@ -10,7 +10,7 @@
         "harness.status_read_set_advance_approval"
       ]
     },
-    "artifact_version": { "const": "1.0.5" },
+    "artifact_version": { "const": "1.0.6" },
     "approved": { "const": true },
     "exact_paths": {
       "type": "array",

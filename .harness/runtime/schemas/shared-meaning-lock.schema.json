@@ -5,7 +5,7 @@
   "required": ["artifact_id", "artifact_version", "user_meaning", "unresolved_ambiguity", "user_confirmation"],
   "properties": {
     "artifact_id": { "const": "harness.shared_meaning_lock" },
-    "artifact_version": { "const": "1.0.5" },
+    "artifact_version": { "const": "1.0.6" },
     "user_meaning": { "type": "string", "minLength": 1 },
     "unresolved_ambiguity": { "type": "array", "items": { "type": "string" } },
     "user_confirmation": {

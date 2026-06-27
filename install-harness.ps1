@@ -3,7 +3,7 @@ param(
     [string]$SourcePath = "",
     [string]$GitHubUrl = "",
     [string]$Repository = "https://github.com/vibedong/jjamppong",
-    [string]$ReleaseTag = "harness-v1.0.5",
+    [string]$ReleaseTag = "harness-v1.0.6",
     [string]$ReleaseAssetPath = "",
     [string]$ReleaseManifestPath = "",
     [switch]$Force,
@@ -99,7 +99,7 @@ function Write-UpdatePreflightAndExit {
     param([string]$Root)
     $proposal = [ordered]@{
         artifact_id = "harness.update_preflight"
-        artifact_version = "1.0.5"
+        artifact_version = "1.0.6"
         intent = "update_required"
         write_free = $true
         target_path = $Root
@@ -254,17 +254,17 @@ function Resolve-GitHubReleaseAssets {
     } else {
         $apiUrl = "$apiBase/repos/$($UrlInfo.api_repo)/releases/latest"
     }
-    $headers = @{ "User-Agent" = "Harness-Installer/1.0.5" }
+    $headers = @{ "User-Agent" = "Harness-Installer/1.0.6" }
     $response = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing -Headers $headers
     $release = $response.Content | ConvertFrom-Json
     $assets = @($release.assets)
-    $zipAsset = @($assets | Where-Object { $_.name -eq "harness-runtime-v1.0.5.zip" })[0]
+    $zipAsset = @($assets | Where-Object { $_.name -eq "harness-runtime-v1.0.6.zip" })[0]
     if (-not $zipAsset) {
         $zipAsset = @($assets | Where-Object { $_.name -like "harness-runtime-v*.zip" })[0]
     }
-    $manifestAsset = @($assets | Where-Object { $_.name -eq "HARNESS_RELEASE_MANIFEST_V1_0_5.json" })[0]
-    if (-not $zipAsset) { throw "GitHub release asset harness-runtime-v1.0.5.zip was not found." }
-    if (-not $manifestAsset) { throw "GitHub release manifest HARNESS_RELEASE_MANIFEST_V1_0_5.json was not found." }
+    $manifestAsset = @($assets | Where-Object { $_.name -eq "HARNESS_RELEASE_MANIFEST_V1_0_6.json" })[0]
+    if (-not $zipAsset) { throw "GitHub release asset harness-runtime-v1.0.6.zip was not found." }
+    if (-not $manifestAsset) { throw "GitHub release manifest HARNESS_RELEASE_MANIFEST_V1_0_6.json was not found." }
 
     $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("harness-download-" + [System.Guid]::NewGuid().ToString("N"))
     New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
@@ -303,7 +303,7 @@ function Write-InstalledSourceIdentity {
     param([string]$TargetRoot, [object]$Source)
     $identity = [ordered]@{
         artifact_id = "harness.installed_source_identity"
-        artifact_version = "1.0.5"
+        artifact_version = "1.0.6"
         source_repository = [string]$Source.source_repository
         release_tag = [string]$Source.release_tag
         immutable_commit = [string]$Source.immutable_commit
