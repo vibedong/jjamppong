@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -87,6 +88,20 @@ class PublicDoctorReadOnlyTests(unittest.TestCase):
             self.assertNotEqual(completed.returncode, 0)
             payload = json.loads(completed.stdout)
             self.assertIn("tests/extra.py", payload["release_surface_violations"])
+
+    def test_release_candidate_mode_ignores_git_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "git-worktree-candidate"
+            target.mkdir()
+            coverage = json.loads((ROOT / ".harness/runtime/coverage/RELEASE_COVERAGE_UNIVERSE.json").read_text(encoding="utf-8"))
+            for rel in coverage["runtime_paths"]:
+                src = ROOT / rel
+                dst = target / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+            (target / ".git").write_text("gitdir: ../.git/worktrees/git-worktree-candidate\n", encoding="utf-8")
+            completed = run_doctor(target, "-Mode", "release_candidate")
+            self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
 
 
 if __name__ == "__main__":

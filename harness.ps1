@@ -146,7 +146,7 @@ function Invoke-Doctor {
         foreach ($rel in $runtimePaths) { $expected[$rel] = $true }
         Get-ChildItem -LiteralPath $Root -Recurse -File -Force | ForEach-Object {
             $rel = $_.FullName.Substring($Root.Length + 1).Replace("\", "/")
-            if ($rel.StartsWith(".git/")) { return }
+            if ($rel -eq ".git" -or $rel.StartsWith(".git/")) { return }
             if (-not $expected.ContainsKey($rel)) {
                 Add-Violation $releaseSurfaceViolations $rel
             }
