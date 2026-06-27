@@ -3,7 +3,7 @@
   "artifact_version": "1.0.5",
   "source_repository": "https://github.com/vibedong/jjamppong",
   "release_tag": "harness-v1.0.5",
-  "immutable_commit": "c4630736ac0341018cb0c860f58d1a46e3b237e3",
+  "immutable_commit": "f8686eed1661c771a5d9a857a6af19f50c95bf5c",
   "artifact_sha256": "88d08dec7fdca537f3a2d8dae30f362ddaf95f3c065218b5e29376e80241e630",
   "artifact_hash_rule": "runtime_paths_file_hash_rows_excluding_mutable_local_state",
   "local_cache_path_is_identity": false,
