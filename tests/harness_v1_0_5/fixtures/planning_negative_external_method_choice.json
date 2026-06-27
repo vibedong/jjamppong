@@ -1,0 +1,10 @@
+{
+  "case_id": "planning_negative_external_method_choice",
+  "user_input": "외부 자료를 모아서 보고 싶어.",
+  "agent_response": "공식 자료 확인과 화면 자동화 중 공식 자료 확인을 우선으로 할까요?",
+  "expected": {
+    "mentions_no_research": false,
+    "asks_one_meaning_axis": false,
+    "does_not_choose_external_or_technical_method": false
+  }
+}

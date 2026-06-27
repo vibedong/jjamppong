@@ -53,7 +53,7 @@ class StatusCoverageAndTestTargetRegistryTests(unittest.TestCase):
     def test_release_coverage_universe_exists_and_uses_canonical_hash(self):
         payload = json.loads(RUNTIME_UNIVERSE.read_text(encoding="utf-8"))
         self.assertEqual(payload["artifact_id"], "harness.release_coverage_universe")
-        self.assertEqual(payload["artifact_version"], "1.0.5")
+        self.assertEqual(payload["artifact_version"], "1.0.6")
         self.assertEqual(payload["runtime_paths_sha256"], paths_sha256(payload["runtime_paths"]))
         valid, reason = validate_runtime_paths(payload["runtime_paths"])
         self.assertTrue(valid, reason)

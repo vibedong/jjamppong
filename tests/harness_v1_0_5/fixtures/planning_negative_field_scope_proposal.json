@@ -1,10 +1,10 @@
 {
   "case_id": "planning_negative_field_scope_proposal",
-  "user_input": "나라장터에서 실시설계 관련 값을 추출하고 싶어.",
-  "agent_response": "예산, 지역, 기관, 마감일 기준으로 확정하면 될까요?",
+  "user_input": "업무 자료에서 필요한 값을 추출하고 싶어.",
+  "agent_response": "날짜, 금액, 담당자, 상태 기준으로 확정하면 될까요?",
   "expected": {
     "mentions_no_research": false,
     "asks_one_meaning_axis": false,
-    "does_not_choose_api_or_crawling": true
+    "does_not_choose_external_or_technical_method": true
   }
 }

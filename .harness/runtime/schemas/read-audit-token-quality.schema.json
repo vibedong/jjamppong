@@ -5,7 +5,7 @@
   "required": ["artifact_id", "artifact_version", "action", "read_paths", "token_assessment"],
   "properties": {
     "artifact_id": { "const": "harness.read_audit_token_quality" },
-    "artifact_version": { "const": "1.0.5" },
+    "artifact_version": { "const": "1.0.6" },
     "action": { "type": "string" },
     "read_paths": { "type": "array", "items": { "type": "string" } },
     "estimated_tokens": { "type": "integer", "minimum": 0 },

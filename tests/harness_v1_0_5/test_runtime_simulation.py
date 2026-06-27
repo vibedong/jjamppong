@@ -40,7 +40,7 @@ class RuntimeSimulationTests(unittest.TestCase):
             payload = json.loads(doctor.stdout)
             self.assertEqual(payload["overall_status"], "pass")
             contract = (target / ".harness/runtime/contracts/PLANNING_STAGE_CONTRACT.md").read_text(encoding="utf-8")
-            self.assertIn("웹 검색 금지", contract)
+            self.assertIn("외부 검색 금지", contract)
             self.assertIn("Shared Meaning Lock", contract)
             readset = json.loads((target / ".harness/current/readsets/CURRENT_READ_SET.json").read_text(encoding="utf-8"))
             read_paths = [item["path"] for item in readset["paths"]]
@@ -49,13 +49,13 @@ class RuntimeSimulationTests(unittest.TestCase):
 
     def test_planning_stage_sequence_blocks_premature_research_and_file_writes(self):
         transcript = [
-            {"turn": 1, "user": "나라장터 실시설계들을 크롤링해서 원하는 값만 추출하고 싶어.", "agent_action": "ask_domain_meaning_question"},
-            {"turn": 2, "user": "공고랑 첨부문서에서 실시설계 관련 값만 보면 돼.", "agent_action": "draft_shared_meaning_lock_only"},
+            {"turn": 1, "user": "외부 자료에서 필요한 값을 자동으로 모아 업무에 쓰는 도구를 만들고 싶어.", "agent_action": "ask_domain_meaning_question"},
+            {"turn": 2, "user": "반복해서 들어오는 자료에서 우리 업무 판단에 필요한 값만 보면 돼.", "agent_action": "draft_shared_meaning_lock_only"},
             {"turn": 3, "user": "응", "agent_action": "ask_confirmation_because_short_reply_is_ambiguous"},
             {"turn": 4, "user": "맞아. 아직 리서치는 하지 말고 내가 말한 뜻만 고정해.", "agent_action": "record_shared_meaning_lock"},
             {"turn": 5, "user": "이제 어떤 방향으로 리서치할지 먼저 제안해줘.", "agent_action": "draft_research_direction_request"},
         ]
-        forbidden_before_lock = {"web_search", "api_lookup", "file_write", "status_readset_advance", "product_code"}
+        forbidden_before_lock = {"external_search", "external_source_lookup", "file_write", "status_readset_advance", "product_code"}
         actions_before_lock = {row["agent_action"] for row in transcript[:3]}
         self.assertTrue(forbidden_before_lock.isdisjoint(actions_before_lock))
         self.assertEqual(transcript[0]["agent_action"], "ask_domain_meaning_question")

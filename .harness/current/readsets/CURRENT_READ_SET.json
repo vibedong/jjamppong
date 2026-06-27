@@ -1,6 +1,6 @@
 {
   "artifact_id": "harness.current_read_set",
-  "artifact_version": "1.0.5",
+  "artifact_version": "1.0.6",
   "stage": "installed_project_start",
   "language": "ko",
   "byte_budget_target": 20480,

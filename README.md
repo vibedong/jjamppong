@@ -1,4 +1,4 @@
-# Harness 1.0.5 Runtime
+# Harness 1.0.6 Runtime
 
 Harness는 Codex 앱에서 프로젝트 폴더 안에 설치해 쓰는 프로젝트 로컬 제작 workflow입니다. 별도 Windows 앱이나 Codex 플러그인이 아닙니다.
 

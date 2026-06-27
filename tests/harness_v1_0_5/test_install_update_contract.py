@@ -96,23 +96,23 @@ def create_fake_release_asset(tmp: Path, repository: str = "https://github.com/v
         dst = source / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
-    zip_path = tmp / "harness-runtime-v1.0.5.zip"
+    zip_path = tmp / "harness-runtime-v1.0.6.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for path in sorted(source.rglob("*")):
             if path.is_file():
                 zf.write(path, path.relative_to(source).as_posix())
     manifest = {
         "artifact_id": "harness.release_manifest",
-        "artifact_version": "1.0.5",
+        "artifact_version": "1.0.6",
         "source_repository": repository,
-        "release_tag": "harness-v1.0.5",
+        "release_tag": "harness-v1.0.6",
         "immutable_commit": "0123456789abcdef0123456789abcdef01234567",
-        "release_asset_name": "harness-runtime-v1.0.5.zip",
+        "release_asset_name": "harness-runtime-v1.0.6.zip",
         "release_asset_sha256": file_sha256(zip_path),
         "runtime_artifact_sha256": runtime_artifact_hash(source),
         "runtime_paths_sha256": coverage["runtime_paths_sha256"],
     }
-    manifest_path = tmp / "HARNESS_RELEASE_MANIFEST_V1_0_5.json"
+    manifest_path = tmp / "HARNESS_RELEASE_MANIFEST_V1_0_6.json"
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, sort_keys=True), encoding="utf-8")
     return zip_path, manifest_path
 
@@ -120,7 +120,7 @@ def create_fake_release_asset(tmp: Path, repository: str = "https://github.com/v
 class ReleaseAssetHandler(http.server.BaseHTTPRequestHandler):
     zip_path: Path
     manifest_path: Path
-    tag_name = "harness-v1.0.5"
+    tag_name = "harness-v1.0.6"
 
     def do_GET(self):
         if self.path == "/repos/vibedong/jjamppong/releases/latest":
@@ -129,12 +129,12 @@ class ReleaseAssetHandler(http.server.BaseHTTPRequestHandler):
                     "tag_name": self.tag_name,
                     "assets": [
                         {
-                            "name": "harness-runtime-v1.0.5.zip",
-                            "browser_download_url": f"http://127.0.0.1:{self.server.server_port}/harness-runtime-v1.0.5.zip",
+                            "name": "harness-runtime-v1.0.6.zip",
+                            "browser_download_url": f"http://127.0.0.1:{self.server.server_port}/harness-runtime-v1.0.6.zip",
                         },
                         {
-                            "name": "HARNESS_RELEASE_MANIFEST_V1_0_5.json",
-                            "browser_download_url": f"http://127.0.0.1:{self.server.server_port}/HARNESS_RELEASE_MANIFEST_V1_0_5.json",
+                            "name": "HARNESS_RELEASE_MANIFEST_V1_0_6.json",
+                            "browser_download_url": f"http://127.0.0.1:{self.server.server_port}/HARNESS_RELEASE_MANIFEST_V1_0_6.json",
                         },
                     ],
                 },
@@ -146,7 +146,7 @@ class ReleaseAssetHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if self.path == "/harness-runtime-v1.0.5.zip":
+        if self.path == "/harness-runtime-v1.0.6.zip":
             body = self.zip_path.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "application/zip")
@@ -154,7 +154,7 @@ class ReleaseAssetHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
-        if self.path == "/HARNESS_RELEASE_MANIFEST_V1_0_5.json":
+        if self.path == "/HARNESS_RELEASE_MANIFEST_V1_0_6.json":
             body = self.manifest_path.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -257,14 +257,14 @@ class InstallUpdateContractTests(unittest.TestCase):
             target.mkdir()
             completed = run_installer_from_release(
                 target,
-                "https://github.com/vibedong/jjamppong/releases/tag/harness-v1.0.5",
+                "https://github.com/vibedong/jjamppong/releases/tag/harness-v1.0.6",
                 zip_path,
                 manifest_path,
             )
             self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
             identity = json.loads((target / ".harness/current/source/SOURCE_IDENTITY.json").read_text(encoding="utf-8"))
             self.assertEqual(identity["source_repository"], "https://github.com/vibedong/jjamppong")
-            self.assertEqual(identity["release_tag"], "harness-v1.0.5")
+            self.assertEqual(identity["release_tag"], "harness-v1.0.6")
             self.assertEqual(identity["immutable_commit"], "0123456789abcdef0123456789abcdef01234567")
             self.assertEqual(identity["artifact_sha256"], json.loads(manifest_path.read_text(encoding="utf-8"))["runtime_artifact_sha256"])
 
@@ -282,7 +282,7 @@ class InstallUpdateContractTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
             identity = json.loads((target / ".harness/current/source/SOURCE_IDENTITY.json").read_text(encoding="utf-8"))
-            self.assertEqual(identity["release_tag"], "harness-v1.0.5")
+            self.assertEqual(identity["release_tag"], "harness-v1.0.6")
             self.assertNotEqual(identity["release_tag"], "latest")
 
     def test_github_url_without_sidecar_paths_downloads_release_assets(self):
@@ -313,7 +313,7 @@ class InstallUpdateContractTests(unittest.TestCase):
                 )
             self.assertEqual(completed.returncode, 0, completed.stderr + completed.stdout)
             identity = json.loads((target / ".harness/current/source/SOURCE_IDENTITY.json").read_text(encoding="utf-8"))
-            self.assertEqual(identity["release_tag"], "harness-v1.0.5")
+            self.assertEqual(identity["release_tag"], "harness-v1.0.6")
             self.assertEqual(identity["source_repository"], "https://github.com/vibedong/jjamppong")
 
     def test_github_url_repository_must_match_release_manifest_repository(self):
@@ -324,7 +324,7 @@ class InstallUpdateContractTests(unittest.TestCase):
             target.mkdir()
             completed = run_installer_from_release(
                 target,
-                "https://github.com/vibedong/jjamppong/releases/tag/harness-v1.0.5",
+                "https://github.com/vibedong/jjamppong/releases/tag/harness-v1.0.6",
                 zip_path,
                 manifest_path,
             )

@@ -1,6 +1,6 @@
 {
   "artifact_id": "harness.release_coverage_universe",
-  "artifact_version": "1.0.5",
+  "artifact_version": "1.0.6",
   "runtime_paths": [
     "AGENTS.md",
     "README.md",
