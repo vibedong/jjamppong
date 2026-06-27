@@ -1,4 +1,4 @@
-# Harness 1.0 Runtime
+# Harness 1.0.2 Runtime
 
 Harness는 Codex 앱에서 프로젝트 폴더 안에 설치해 쓰는 프로젝트 로컬 제작 workflow입니다. 별도 Windows 앱이나 Codex 플러그인이 아닙니다.
 
@@ -27,6 +27,8 @@ python tools/harness-validator/run-doctor.py
 ```
 
 비공개 저장소면 GitHub CLI와 `gh auth login`이 필요합니다. 공개 release asset이 아니면 public link-only ready로 주장하지 않습니다.
+
+Harness 1.0.2부터 업데이트와 복구는 현재 기획 단계의 `STATUS_KO.md`와 `CURRENT_READ_SET.json`을 초기 상태로 되돌리지 않습니다.
 
 ## 설치 후 workflow
 

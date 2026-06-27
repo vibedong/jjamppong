@@ -22,3 +22,13 @@
 8. R08 Implementation Start Approval: 구현 시작 승인 전까지 제품 코드는 금지한다.
 
 각 단계가 끝나면 `.harness/current/status/STATUS_KO.md`와 `.harness/manifests/CURRENT_READ_SET.json`을 갱신한다.
+
+기획단계 상태 기계는 유한하다. 사용자의 문장이 다양해도 Harness는 현재 단계에서 다음 중 하나로만 처리한다.
+
+- 정보가 충분하면 다음 단계로 이동한다.
+- 정보가 부족하면 확인 질문을 만들고 현재 단계에 머문다.
+- 현재 단계 수정 요청이면 현재 단계 산출물만 갱신한다.
+- 이전 결정과 충돌하면 필요한 이전 단계로 되돌아간다.
+- 구현 또는 제품 코드 작성을 요구하면 R08 승인 전까지 차단하고 현재 단계를 유지한다.
+
+새 채팅에서는 먼저 `STATUS_KO.md`와 `CURRENT_READ_SET.json`을 읽고 현재 단계를 복원한다. 업데이트 또는 복구 후에도 현재 단계와 read set이 R00으로 되돌아가면 안 된다.

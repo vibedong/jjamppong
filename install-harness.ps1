@@ -4,7 +4,7 @@ param(
     [ValidateSet("Install", "Update", "Repair")]
     [string]$Mode = "Install",
     [string]$ReleaseUrl = "https://github.com/vibedong/jjamppong/releases/latest",
-    [string]$ReleaseTag = "harness-v1.0.1",
+    [string]$ReleaseTag = "harness-v1.0.2",
     [string]$Repository = "vibedong/jjamppong",
     [switch]$Force
 )
@@ -174,7 +174,8 @@ function Get-SourceRoot {
     if ($url -match "/download/.+\.zip$") {
         $assetUrl = $url
     } else {
-        $assetUrl = "https://github.com/$Repo/releases/latest/download/harness-1.0.1-runtime.zip"
+        $assetVersion = $RequestedTag -replace "^harness-v", ""
+        $assetUrl = "https://github.com/$Repo/releases/latest/download/harness-$assetVersion-runtime.zip"
     }
     try {
         Invoke-WebRequest -Uri $assetUrl -OutFile $archivePath -UseBasicParsing
@@ -298,21 +299,9 @@ function Write-InstalledState {
         [string]$UrlValue,
         [string]$Repo,
         [string]$Tag,
-        $PreviousIdentity
+        $PreviousIdentity,
+        [switch]$PreserveCurrentState
     )
-    $statusText = @(
-        '# Harness 상태',
-        '',
-        'Harness 1.0 runtime 설치 완료.',
-        '',
-        '- 현재 단계: R00 Install Check 완료',
-        '- 다음 단계: R01 Product Goal Intake',
-        '- 다음 행동: 사용자가 만들 제품의 목표를 말하면 먼저 목표와 제약을 정리하고 확인 질문을 만든다.',
-        '- 제품 코드 구현: R08 Implementation Start Approval 전까지 금지',
-        '- 공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
-    ) -join [Environment]::NewLine
-    Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/status/STATUS_KO.md") -Content $statusText
-
     $startHere = @(
         '# Harness 시작',
         '',
@@ -321,23 +310,41 @@ function Write-InstalledState {
         '3. `.harness/runtime/START_WORKFLOW_KO.md`에 따라 제품 목표를 정리한다.',
         '4. 구현 시작 승인 전에는 제품 코드를 만들지 않는다.'
     ) -join [Environment]::NewLine
-    Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/navigation/START_HERE.md") -Content $startHere
-
-    $readSet = [ordered]@{
-        artifact_id = "harness.current_read_set"
-        artifact_version = "1.0.1"
-        stage = "installed_project_start"
-        language = "ko"
-        paths = @(
-            [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },
-            [ordered]@{ path = ".harness/current/navigation/START_HERE.md"; purpose_ko = "시작 안내" },
-            [ordered]@{ path = ".harness/runtime/START_WORKFLOW_KO.md"; purpose_ko = "workflow 시작 규칙" },
-            [ordered]@{ path = ".harness/runtime/WORKFLOW_RULES_KO.md"; purpose_ko = "stage 순서와 금지선" },
-            [ordered]@{ path = ".harness/runtime/READ_SET_POLICY_KO.md"; purpose_ko = "xhigh read set 정책" },
-            [ordered]@{ path = ".harness/current/source_identity/SOURCE_IDENTITY.json"; purpose_ko = "설치 출처" }
-        )
+    $startHerePath = Join-Path $TargetRoot ".harness/current/navigation/START_HERE.md"
+    if ((-not $PreserveCurrentState) -or (-not (Test-Path -LiteralPath $startHerePath -PathType Leaf))) {
+        Write-Utf8NoBom -PathValue $startHerePath -Content $startHere
     }
-    Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/manifests/CURRENT_READ_SET.json") -Payload $readSet
+
+    if (-not $PreserveCurrentState) {
+        $statusText = @(
+            '# Harness 상태',
+            '',
+            'Harness 1.0 runtime 설치 완료.',
+            '',
+            '- 현재 단계: R00 Install Check 완료',
+            '- 다음 단계: R01 Product Goal Intake',
+            '- 다음 행동: 사용자가 만들 제품의 목표를 말하면 먼저 목표와 제약을 정리하고 확인 질문을 만든다.',
+            '- 제품 코드 구현: R08 Implementation Start Approval 전까지 금지',
+            '- 공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
+        ) -join [Environment]::NewLine
+        Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/status/STATUS_KO.md") -Content $statusText
+
+        $readSet = [ordered]@{
+            artifact_id = "harness.current_read_set"
+            artifact_version = "1.0.2"
+            stage = "installed_project_start"
+            language = "ko"
+            paths = @(
+                [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },
+                [ordered]@{ path = ".harness/current/navigation/START_HERE.md"; purpose_ko = "시작 안내" },
+                [ordered]@{ path = ".harness/runtime/START_WORKFLOW_KO.md"; purpose_ko = "workflow 시작 규칙" },
+                [ordered]@{ path = ".harness/runtime/WORKFLOW_RULES_KO.md"; purpose_ko = "stage 순서와 금지선" },
+                [ordered]@{ path = ".harness/runtime/READ_SET_POLICY_KO.md"; purpose_ko = "xhigh read set 정책" },
+                [ordered]@{ path = ".harness/current/source_identity/SOURCE_IDENTITY.json"; purpose_ko = "설치 출처" }
+            )
+        }
+        Write-CanonicalJson -PathValue (Join-Path $TargetRoot ".harness/manifests/CURRENT_READ_SET.json") -Payload $readSet
+    }
 
     $commitInfo = Get-SourceCommit -SourceRoot $SourceRoot -Repo $Repo -Tag $Tag
     $previousIdentitySummary = $null
@@ -355,7 +362,7 @@ function Write-InstalledState {
 
     $identity = [ordered]@{
         artifact_id = "harness.installed_source_identity"
-        artifact_version = "1.0.1"
+        artifact_version = "1.0.2"
         source_repository = "https://github.com/$Repo"
         release_url = (Get-NormalizedReleaseUrl $UrlValue)
         release_tag = $Tag
@@ -373,7 +380,7 @@ function Write-InstalledState {
 
     $installRecord = [ordered]@{
         artifact_id = "harness.install_record"
-        artifact_version = "1.0.1"
+        artifact_version = "1.0.2"
         install_result = $InstallResult
         install_mode = $ModeValue
         release_tag = $Tag
@@ -397,6 +404,12 @@ New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/manif
 New-Item -ItemType Directory -Force -Path (Join-Path $targetRoot ".harness/evidence/install") | Out-Null
 
 $identityPath = Join-Path $targetRoot ".harness/current/source_identity/SOURCE_IDENTITY.json"
+$statusPath = Join-Path $targetRoot ".harness/current/status/STATUS_KO.md"
+$readSetPath = Join-Path $targetRoot ".harness/manifests/CURRENT_READ_SET.json"
+$preserveCurrentState = (
+    (Test-Path -LiteralPath $statusPath -PathType Leaf) -and
+    (Test-Path -LiteralPath $readSetPath -PathType Leaf)
+)
 $previousIdentity = $null
 if (Test-Path -LiteralPath $identityPath -PathType Leaf) {
     try {
@@ -413,7 +426,7 @@ if ($previousIdentity -and $previousIdentity.release_tag -eq $ReleaseTag) {
 
 if (($Mode -eq "Install" -or $Mode -eq "Update") -and $sameVersion -and (Test-RuntimeComplete $targetRoot)) {
     Install-AgentsRouter -TargetRoot $targetRoot
-    Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult "already_up_to_date" -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity
+    Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult "already_up_to_date" -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity -PreserveCurrentState:$preserveCurrentState
     Write-Output "already_up_to_date"
     exit 0
 }
@@ -428,7 +441,7 @@ if ($Mode -eq "Update") {
     $result = "repaired"
 }
 
-Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult $result -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity
+Write-InstalledState -TargetRoot $targetRoot -SourceRoot $sourceRoot -InstallResult $result -ModeValue $Mode -UrlValue $ReleaseUrl -Repo $Repository -Tag $ReleaseTag -PreviousIdentity $previousIdentity -PreserveCurrentState:$preserveCurrentState
 
 Write-Output $result
 Write-Output "Harness 1.0 runtime is ready in $targetRoot"

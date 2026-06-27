@@ -12,3 +12,5 @@
 - 필수 workflow 문서를 읽는 것은 과토큰이 아니다.
 
 단순 작업에서 전체 설계 문서나 validator source를 읽으면 wasteful over-reading으로 기록한다.
+
+새 채팅과 업데이트 후에는 현재 단계 read set을 유지한다. 업데이트 때문에 현재 단계 read set이 초기 설치 read set으로 되돌아가면 안 된다. 현재 단계가 R02 이상이면 이전 단계의 planning 산출물도 read set에 포함되어야 한다.

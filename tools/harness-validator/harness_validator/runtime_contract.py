@@ -42,3 +42,16 @@ SOURCE_IDENTITY_REQUIRED = (
     "installed_at_utc",
     "previous_identity",
 )
+
+PLANNING_STAGE_FILES = {
+    "R01": ".harness/current/planning/PRODUCT_GOAL_INTAKE.md",
+    "R02": ".harness/current/planning/DOMAIN_FOUNDATION.md",
+    "R03": ".harness/current/planning/PRODUCT_SCOPE.md",
+    "R04": ".harness/current/planning/USER_EXPERIENCE.md",
+    "R05": ".harness/current/planning/BEHAVIOR_SPECIFICATION.md",
+    "R06": ".harness/current/planning/DEVELOPMENT_PLAN.md",
+    "R07": ".harness/current/planning/WORK_UNITS.md",
+    "R08": ".harness/current/planning/IMPLEMENTATION_START_APPROVAL_REQUEST.md",
+}
+
+PLANNING_STAGE_ORDER = tuple(PLANNING_STAGE_FILES)

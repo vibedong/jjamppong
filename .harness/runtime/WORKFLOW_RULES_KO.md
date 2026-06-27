@@ -44,3 +44,11 @@ R08 Implementation Start Approval:
 R09 Implementation Execution:
 
 - 승인된 Work Units 기준으로만 코드 작성과 테스트를 진행한다.
+
+공통 상태 보존 규칙:
+
+- 새 채팅은 `.harness/current/status/STATUS_KO.md`와 `.harness/manifests/CURRENT_READ_SET.json`만으로 현재 단계를 복원해야 한다.
+- 업데이트와 복구는 `.harness/runtime/`, `tools/harness-validator/`, 설치 출처 기록을 갱신할 수 있다.
+- 업데이트와 복구는 이미 진행 중인 `.harness/current/status/STATUS_KO.md`와 `.harness/manifests/CURRENT_READ_SET.json`을 초기 R00 상태로 되돌아가면 안 된다.
+- planning 산출물이 있는데 상태가 R00이면 상태 충돌이다.
+- read set stage와 STATUS의 현재 단계가 다르면 상태 충돌이다.
