@@ -607,14 +607,15 @@ function Write-InstalledState {
         $statusText = @(
             '# Harness 상태',
             '',
-            'Harness 1.0.3 runtime 설치 완료.',
+            'Harness version: harness-v1.0.3',
+            'Stage set version: harness-stage-set-v1.0.3',
+            'Current stage: R01 Product Goal',
+            'Implementation Entry Gate: closed',
+            'Migration status: not_needed',
             '',
-            '- 현재 단계: R01 Product Goal Intake',
-            '- Stage set version: harness-stage-set-v1.0.3',
-            '- 다음 행동: 사용자가 만들 제품의 목표를 말하면 먼저 목표와 제약을 정리하고 확인 질문을 만든다.',
-            '- 제품 코드 구현: R09 Implementation Entry 승인 전까지 금지',
-            '- Implementation Entry Gate: closed',
-            '- 공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
+            '다음 행동: 사용자가 만들 제품의 목표를 말하면 먼저 제품 목표, 성공 기준, 제약, 확인 질문을 정리한다.',
+            '제품 코드 구현: R09 Implementation Entry 승인 전까지 금지',
+            '공식 읽기 시작점: `.harness/manifests/CURRENT_READ_SET.json`'
         ) -join [Environment]::NewLine
         Write-Utf8NoBom -PathValue (Join-Path $TargetRoot ".harness/current/status/STATUS_KO.md") -Content $statusText
 
@@ -622,7 +623,8 @@ function Write-InstalledState {
             artifact_id = "harness.current_read_set"
             artifact_version = "1.0.3"
             schema_version = "1.0"
-            stage = "R01 Product Goal Intake"
+            stage = "R01"
+            stage_set_version = "harness-stage-set-v1.0.3"
             language = "ko"
             paths = @(
                 [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },

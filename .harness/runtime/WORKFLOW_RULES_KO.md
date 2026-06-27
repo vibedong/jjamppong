@@ -28,20 +28,24 @@ R05 Behavior Specification:
 
 - 명령, Query, 상태, 이벤트, 예외, 승인 흐름을 Behavior Specification 문서로 만든다.
 
-R06 Development Plan:
+R06 Technical Architecture:
+
+- 구현 가능한 기술 구조, 상태 모델, 검증 모델, 보안 경계, migration 정책을 만든다.
+
+R07 Development Plan:
 
 - 구현 계획, 테스트 기준, rollback 기준을 만든다.
 
-R07 Work Units:
+R08 Work Units:
 
 - fresh implementation agent가 독립적으로 실행할 Work Units를 만든다.
 
-R08 Implementation Start Approval:
+R09 Implementation Entry:
 
 - Domain Foundation, Product Scope, User Experience, Behavior Specification, Development Plan, Work Units가 준비되기 전에는 구현 시작 승인을 열지 않는다.
 - 구현 시작 승인 전 제품 코드는 금지한다.
 
-R09 Implementation Execution:
+R10 Implementation Execution:
 
 - 승인된 Work Units 기준으로만 코드 작성과 테스트를 진행한다.
 
