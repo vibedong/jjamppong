@@ -1,0 +1,12 @@
+{
+  "case_id": "gate.shared_meaning_ambiguous_short_reply",
+  "event": {
+    "requested_action": "record_shared_meaning_lock",
+    "user_reply": "응",
+    "confirmation_is_explicit": false
+  },
+  "expected": {
+    "allowed": false,
+    "reason_code": "shared_meaning_confirmation_ambiguous"
+  }
+}

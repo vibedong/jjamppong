@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness Test Target Class",
+  "type": "object",
+  "required": ["test_target_id", "class"],
+  "properties": {
+    "test_target_id": {
+      "type": "string",
+      "pattern": "^TT-[A-Z0-9]+-[0-9]{3}$"
+    },
+    "class": {
+      "type": "string",
+      "enum": [
+        "oracle_fixture",
+        "schema_validation",
+        "public_doctor",
+        "install_update",
+        "runtime_release_surface",
+        "runtime_simulation",
+        "manual_review"
+      ]
+    },
+    "expected_result": { "type": "string" },
+    "evidence_type": { "type": "string" }
+  }
+}

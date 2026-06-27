@@ -1,0 +1,11 @@
+{
+  "case_id": "test_target.invalid_alias",
+  "target": {
+    "test_target_id": "doctor",
+    "class": "manual"
+  },
+  "expected": {
+    "valid": false,
+    "reason_code": "test_target_id_must_be_stable_prefixed_id"
+  }
+}

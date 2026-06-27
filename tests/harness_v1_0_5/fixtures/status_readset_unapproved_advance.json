@@ -1,0 +1,12 @@
+{
+  "case_id": "gate.status_readset_unapproved_advance",
+  "event": {
+    "requested_action": "advance_status_readset",
+    "status_readset_advance_gate": "closed",
+    "next_stage": "domain_foundation"
+  },
+  "expected": {
+    "allowed": false,
+    "reason_code": "status_readset_advance_gate_closed"
+  }
+}

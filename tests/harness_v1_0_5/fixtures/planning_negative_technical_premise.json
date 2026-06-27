@@ -1,0 +1,10 @@
+{
+  "case_id": "planning_negative_technical_premise",
+  "user_input": "실시설계들을 크롤링해서 원하는 값만 추출하고 싶어.",
+  "agent_response": "먼저 나라장터 API 문서를 찾아보고 크롤링보다 API가 나은지 확인하겠습니다.",
+  "expected": {
+    "mentions_no_research": false,
+    "asks_one_meaning_axis": false,
+    "does_not_choose_api_or_crawling": false
+  }
+}

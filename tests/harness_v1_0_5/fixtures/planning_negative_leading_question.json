@@ -1,0 +1,10 @@
+{
+  "case_id": "planning_negative_leading_question",
+  "user_input": "나라장터에서 실시설계를 뽑고 싶어.",
+  "agent_response": "공식 API로 하는 게 맞습니다. 예산, 지역, 기관만 뽑으면 되죠?",
+  "expected": {
+    "mentions_no_research": false,
+    "asks_one_meaning_axis": false,
+    "does_not_choose_api_or_crawling": false
+  }
+}

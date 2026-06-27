@@ -1,0 +1,12 @@
+{
+  "case_id": "gate.file_write_missing_exact_list",
+  "event": {
+    "requested_action": "write_file",
+    "file_write_gate": "closed",
+    "exact_write_paths": []
+  },
+  "expected": {
+    "allowed": false,
+    "reason_code": "file_write_gate_closed_or_missing_exact_paths"
+  }
+}

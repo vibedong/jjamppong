@@ -1,0 +1,26 @@
+{
+  "artifact_id": "harness.current_read_set",
+  "artifact_version": "1.0.5",
+  "stage": "installed_project_start",
+  "language": "ko",
+  "byte_budget_target": 20480,
+  "paths": [
+    {
+      "path": ".harness/current/status/STATUS_KO.md",
+      "purpose_ko": "현재 상태"
+    },
+    {
+      "path": ".harness/current/START_HERE.md",
+      "purpose_ko": "시작 안내"
+    },
+    {
+      "path": ".harness/current/source/SOURCE_IDENTITY.json",
+      "purpose_ko": "설치 출처"
+    },
+    {
+      "path": ".harness/runtime/contracts/PLANNING_STAGE_CONTRACT.md",
+      "purpose_ko": "기획 단계 행동 계약"
+    }
+  ],
+  "exception_required_if_over_budget": true
+}

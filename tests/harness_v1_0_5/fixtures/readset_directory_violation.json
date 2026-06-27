@@ -1,0 +1,15 @@
+{
+  "case_id": "readset.directory_violation",
+  "read_set": {
+    "paths": [
+      {
+        "path": ".harness/runtime/",
+        "purpose_ko": "런타임 전체"
+      }
+    ]
+  },
+  "expected": {
+    "valid": false,
+    "reason_code": "read_set_must_reference_files_only"
+  }
+}

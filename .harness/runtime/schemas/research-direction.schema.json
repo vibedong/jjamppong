@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness Research Direction Gate",
+  "type": "object",
+  "required": ["artifact_id", "artifact_version", "research_question", "why_needed", "allowed_sources", "token_rationale", "user_approval"],
+  "properties": {
+    "artifact_id": { "enum": ["harness.research_direction_request", "harness.research_direction_approval"] },
+    "artifact_version": { "const": "1.0.5" },
+    "research_question": { "type": "string", "minLength": 1 },
+    "why_needed": { "type": "string", "minLength": 1 },
+    "allowed_sources": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "token_rationale": { "type": "string", "minLength": 1 },
+    "stop_condition": { "type": "string" },
+    "user_approval": { "type": "boolean" }
+  }
+}

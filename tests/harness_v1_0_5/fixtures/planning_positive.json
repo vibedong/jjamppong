@@ -1,0 +1,10 @@
+{
+  "case_id": "planning_positive",
+  "user_input": "나라장터에서 실시설계 공고를 찾아 필요한 값만 추출하는 도구를 만들고 싶어.",
+  "agent_response": "아직 리서치나 파일 작성은 하지 않겠습니다. 먼저 도메인 의미를 맞추겠습니다. 여기서 실시설계는 어떤 업무 문서 또는 공고를 뜻하나요?",
+  "expected": {
+    "mentions_no_research": true,
+    "asks_one_meaning_axis": true,
+    "does_not_choose_api_or_crawling": true
+  }
+}

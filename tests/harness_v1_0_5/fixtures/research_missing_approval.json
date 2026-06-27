@@ -1,0 +1,13 @@
+{
+  "case_id": "gate.research_missing_approval",
+  "event": {
+    "requested_action": "web_search",
+    "shared_meaning_lock_status": "recorded",
+    "research_direction_gate": "closed",
+    "user_approved_research_direction": false
+  },
+  "expected": {
+    "allowed": false,
+    "reason_code": "research_direction_gate_closed"
+  }
+}

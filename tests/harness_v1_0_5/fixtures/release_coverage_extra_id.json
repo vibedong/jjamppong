@@ -1,0 +1,12 @@
+{
+  "case_id": "release_coverage.extra_id",
+  "runtime_paths": [
+    "AGENTS.md",
+    "README.md",
+    "tests/harness_v1_0_5/test_runtime_contract_paths.py"
+  ],
+  "expected": {
+    "valid": false,
+    "reason_code": "release_runtime_path_forbidden"
+  }
+}

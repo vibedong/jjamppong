@@ -1,0 +1,32 @@
+{
+  "artifact_id": "harness.release_coverage_universe",
+  "artifact_version": "1.0.5",
+  "runtime_paths": [
+    "AGENTS.md",
+    "README.md",
+    "install-harness.ps1",
+    "harness.ps1",
+    ".agents/skills/harness-planning-socrates/SKILL.md",
+    ".harness/current/status/STATUS_KO.md",
+    ".harness/current/START_HERE.md",
+    ".harness/current/readsets/CURRENT_READ_SET.json",
+    ".harness/current/source/SOURCE_IDENTITY.json",
+    ".harness/runtime/contracts/PLANNING_STAGE_CONTRACT.md",
+    ".harness/runtime/schemas/shared-meaning-lock.schema.json",
+    ".harness/runtime/schemas/research-direction.schema.json",
+    ".harness/runtime/schemas/file-write-approval.schema.json",
+    ".harness/runtime/schemas/read-audit-token-quality.schema.json",
+    ".harness/runtime/schemas/test-target-class.schema.json",
+    ".harness/runtime/coverage/RELEASE_COVERAGE_UNIVERSE.json",
+    ".harness/improvement/BACKLOG.md",
+    ".harness/improvement/BACKLOG.jsonl"
+  ],
+  "runtime_paths_sha256": "1ee3995258df5b9f32570f520c9c63d3473ebdc6eedca3a2c4666e763bbfc3e6",
+  "forbidden_runtime_prefixes": [
+    "tests/",
+    "tools/",
+    "docs/",
+    "_organized_harness_design/",
+    "PRIVATE_HARNESS_CONTEXT/"
+  ]
+}
