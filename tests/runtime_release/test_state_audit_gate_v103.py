@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools/harness-validator"))
 
 from harness_validator.state_model import work_unit_identity_hash, write_work_unit_registry, write_work_unit_approval, write_batch_manifest, write_batch_approval, gate_open_eligible, write_gate_state, append_gate_event, write_implementation_source_manifest, mark_work_unit_stale
+import subprocess
 
 
 WU = {"work_unit_id":"WU-001","artifact_id":"work_unit.wu-001","version":"1.0.0","artifact_revision_identity":"a"*64,"canonical_content_hash":"b"*64,"dependency_snapshot_hash":"c"*64,"acceptance_hash":"d"*64,"direct_acceptance_criteria":["AC-001"],"contributor_acceptance_criteria":[],"test_target_ids":["TEST-001"],"ready_to_start":False,"approval_status":"approved","stale_status":"fresh"}
@@ -61,3 +62,53 @@ class StateAuditGateTests(unittest.TestCase):
             manifest = json.loads((root / ".harness/current/implementation/IMPLEMENTATION_SOURCE_MANIFEST.json").read_text(encoding="utf-8"))
             for key in ("batch_id", "work_unit_ids", "base_commit", "head_commit", "changed_files", "created_files", "modified_files", "deleted_files", "test_evidence_paths", "review_evidence_paths", "out_of_scope_files", "source_manifest_hash"):
                 self.assertIn(key, manifest)
+
+
+class AuditAndGateCloseCommandTests(unittest.TestCase):
+    def prepared_root(self, root):
+        write_work_unit_registry(root, [WU])
+        write_work_unit_approval(root, WU, "creator")
+        batch = write_batch_manifest(root, "BATCH-001", ["WU-001"], {"WU-001": work_unit_identity_hash(WU)})
+        write_batch_approval(root, batch, "creator")
+        (root / ".harness/evidence/git").mkdir(parents=True, exist_ok=True)
+        (root / ".harness/evidence/git/GIT_BASELINE_RECORD_20260627T000000Z.json").write_text('{"baseline_commit":"0000000000000000000000000000000000000000","baseline_commit_status":"verified","remote_push_verified":true}\n', encoding="utf-8")
+        (root / ".harness/evidence/external-skills").mkdir(parents=True, exist_ok=True)
+        (root / ".harness/evidence/external-skills/EXTERNAL_SKILL_RESOLUTION_R10_superpowers.json").write_text('{"resolved_status":"resolved"}\n', encoding="utf-8")
+
+    def test_bootstrap_entry_audit_pass_and_fail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.prepared_root(root)
+            result = subprocess.run(["python", str(ROOT / "tools/harness-validator/run-bootstrap-entry-audit.py"), str(root), "--batch", "BATCH-001"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["overall_status"], "pass")
+            for key in ("schema_version", "command", "overall_status", "blocker_count", "blockers", "warnings", "exit_code", "checked_at_utc", "korean_summary", "approved_work_units", "dependency_closure_passed", "git_remote_verified", "baseline_verified", "external_skill_resolution_passed", "gate_open_eligible"):
+                self.assertIn(key, payload)
+            self.assertIn("implementation_start_possible", payload["korean_summary"])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = subprocess.run(["python", str(ROOT / "tools/harness-validator/run-bootstrap-entry-audit.py"), str(root), "--batch", "BATCH-001"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("bootstrap.missing_batch_manifest", result.stdout)
+
+    def test_gate_close_verification_pass_and_fail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_implementation_source_manifest(root, "BATCH-001", ["WU-001"], "0"*40, "1"*40, ["README.md"], [".harness/evidence/tests/pass.json"], [".harness/evidence/reviews/pass.json"], [])
+            (root / ".harness/evidence/tests").mkdir(parents=True, exist_ok=True)
+            (root / ".harness/evidence/tests/pass.json").write_text('{"overall_status":"pass"}\n', encoding="utf-8")
+            (root / ".harness/evidence/reviews").mkdir(parents=True, exist_ok=True)
+            (root / ".harness/evidence/reviews/pass.json").write_text('{"overall_status":"pass","must_fix_count":0}\n', encoding="utf-8")
+            result = subprocess.run(["python", str(ROOT / "tools/harness-validator/run-gate-close-verification.py"), str(root), "--batch", "BATCH-001"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["overall_status"], "pass")
+            for key in ("schema_version", "command", "overall_status", "blocker_count", "blockers", "warnings", "exit_code", "checked_at_utc", "korean_summary", "batch_id", "source_manifest_hash", "out_of_scope_files", "test_result_summary", "review_result_summary", "gate_close_eligible"):
+                self.assertIn(key, payload)
+            self.assertIn("implementation_start_possible", payload["korean_summary"])
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = subprocess.run(["python", str(ROOT / "tools/harness-validator/run-gate-close-verification.py"), str(root), "--batch", "BATCH-001"], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("gate_close.missing_implementation_source_manifest", result.stdout)
