@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness Read Audit Token Quality",
+  "type": "object",
+  "required": ["artifact_id", "artifact_version", "action", "read_paths", "token_assessment"],
+  "properties": {
+    "artifact_id": { "const": "harness.read_audit_token_quality" },
+    "artifact_version": { "const": "1.0.5" },
+    "action": { "type": "string" },
+    "read_paths": { "type": "array", "items": { "type": "string" } },
+    "estimated_tokens": { "type": "integer", "minimum": 0 },
+    "token_assessment": { "enum": ["necessary", "wasteful_over_reading", "unknown"] }
+  }
+}

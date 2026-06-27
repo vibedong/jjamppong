@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness File Write And Status Advance Approval",
+  "type": "object",
+  "required": ["artifact_id", "artifact_version", "approved", "exact_paths"],
+  "properties": {
+    "artifact_id": {
+      "enum": [
+        "harness.file_write_approval",
+        "harness.status_read_set_advance_approval"
+      ]
+    },
+    "artifact_version": { "const": "1.0.5" },
+    "approved": { "const": true },
+    "exact_paths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "allowed_purpose": { "type": "string" },
+    "next_stage": { "type": "string" }
+  }
+}

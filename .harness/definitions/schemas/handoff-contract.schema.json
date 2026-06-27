@@ -1,1 +1,0 @@
-{"required":["work_unit_id","contribution_id","handoff_evidence_id","canonical_sha256"],"type":"object"}
