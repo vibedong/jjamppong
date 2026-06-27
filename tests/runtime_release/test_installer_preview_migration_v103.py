@@ -86,6 +86,36 @@ class InstallerPreviewMigrationTests(unittest.TestCase):
                     self.assertEqual(payload["required_user_action"], "review_migration")
                     self.assertIn(legacy_stage, status.read_text(encoding="utf-8"))
                     self.assertIn("Implementation Entry Gate: closed", status.read_text(encoding="utf-8"))
+                    self.assertIn("Stage set version: harness-stage-set-v1.0.3", status.read_text(encoding="utf-8"))
+                    read_set_payload = json.loads(read_set.read_text(encoding="utf-8"))
+                    self.assertEqual(read_set_payload["stage_set_version"], "harness-stage-set-v1.0.3")
+                    self.assertTrue(read_set_payload["paths"])
+
+    def test_same_version_update_repairs_legacy_stage_set_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+            first = self.run_installer(target, "Install")
+            self.assertEqual(first.returncode, 0, first.stderr)
+            status = target / ".harness/current/status/STATUS_KO.md"
+            read_set = target / ".harness/manifests/CURRENT_READ_SET.json"
+            status.write_text("# Harness 상태\n\n- 현재 단계: R07 Work Units\nImplementation Entry Gate: closed\n", encoding="utf-8")
+            read_set.write_text('{"stage":"R07","paths":[]}\n', encoding="utf-8")
+            update = self.run_installer(target, "Update")
+            self.assertEqual(update.returncode, 0, update.stderr)
+            self.assertIn("already_up_to_date", update.stdout)
+            self.assertIn("Stage set version: harness-stage-set-v1.0.3", status.read_text(encoding="utf-8"))
+            read_set_payload = json.loads(read_set.read_text(encoding="utf-8"))
+            self.assertEqual(read_set_payload["stage"], "R07")
+            self.assertEqual(read_set_payload["stage_set_version"], "harness-stage-set-v1.0.3")
+            doctor = subprocess.run(
+                ["python", "tools/harness-validator/run-doctor.py", "--mode", "installed-project", str(target)],
+                cwd=str(target),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
 
     def test_install_writes_git_baseline_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:

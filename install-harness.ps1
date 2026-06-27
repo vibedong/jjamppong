@@ -550,6 +550,52 @@ function Get-MigrationBlockedTransition([string]$LegacyStage) {
     }
 }
 
+function Get-MinimumReadSetForStage([string]$Stage) {
+    $stageInfo = switch ($Stage) {
+        "R06" { @{ skill = ".agents/skills/harness-r06-technical-architecture/SKILL.md"; contract = ".harness/definitions/stage-contracts/R06_TECHNICAL_ARCHITECTURE_CONTRACT.md"; artifact = ".harness/current/planning/TECHNICAL_ARCHITECTURE.md"; purpose = "R06 기술 구조" } }
+        "R07" { @{ skill = ".agents/skills/harness-r07-development-plan/SKILL.md"; contract = ".harness/definitions/stage-contracts/R07_DEVELOPMENT_PLAN_CONTRACT.md"; artifact = ".harness/current/planning/DEVELOPMENT_PLAN.md"; purpose = "R07 개발 플랜" } }
+        "R08" { @{ skill = ".agents/skills/harness-r08-work-units/SKILL.md"; contract = ".harness/definitions/stage-contracts/R08_WORK_UNITS_CONTRACT.md"; artifact = ".harness/current/planning/WORK_UNITS.md"; purpose = "R08 작업 단위" } }
+        default { @{ skill = ".agents/skills/harness-r01-product-goal/SKILL.md"; contract = ".harness/definitions/stage-contracts/R01_PRODUCT_GOAL_CONTRACT.md"; artifact = ".harness/current/planning/PRODUCT_GOAL_INTAKE.md"; purpose = "현재 단계" } }
+    }
+    return @(
+        [ordered]@{ path = ".harness/current/status/STATUS_KO.md"; purpose_ko = "현재 상태" },
+        [ordered]@{ path = ".harness/current/navigation/START_HERE.md"; purpose_ko = "시작 안내" },
+        [ordered]@{ path = ".agents/skills/harness-workflow-router/SKILL.md"; purpose_ko = "현재 단계 skill 선택" },
+        [ordered]@{ path = $stageInfo.skill; purpose_ko = "$($stageInfo.purpose) skill" },
+        [ordered]@{ path = $stageInfo.contract; purpose_ko = "$($stageInfo.purpose) 단계 계약" },
+        [ordered]@{ path = $stageInfo.artifact; purpose_ko = "$($stageInfo.purpose) 산출물" },
+        [ordered]@{ path = ".harness/runtime/READ_SET_POLICY_KO.md"; purpose_ko = "xhigh read set 정책" },
+        [ordered]@{ path = ".harness/current/source_identity/SOURCE_IDENTITY.json"; purpose_ko = "설치 출처" }
+    )
+}
+
+function Repair-MigratedReadSet([string]$TargetRoot, [string]$Stage) {
+    $readSetPath = Join-Path $TargetRoot ".harness/manifests/CURRENT_READ_SET.json"
+    $paths = @()
+    if (Test-Path -LiteralPath $readSetPath -PathType Leaf) {
+        try {
+            $existing = Get-Content -LiteralPath $readSetPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($existing.paths) {
+                $paths = @($existing.paths)
+            }
+        } catch {
+            $paths = @()
+        }
+    }
+    if ($paths.Count -eq 0) {
+        $paths = Get-MinimumReadSetForStage $Stage
+    }
+    Write-CanonicalJson -PathValue $readSetPath -Payload ([ordered]@{
+        artifact_id = "harness.current_read_set"
+        artifact_version = "1.0.3"
+        schema_version = "1.0"
+        stage = $Stage
+        stage_set_version = "harness-stage-set-v1.0.3"
+        language = "ko"
+        paths = $paths
+    })
+}
+
 function Apply-StageSetMigrationIfNeeded([string]$TargetRoot) {
     $legacyStage = Get-LegacyStage $TargetRoot
     if (-not $legacyStage) { return $false }
@@ -572,6 +618,9 @@ function Apply-StageSetMigrationIfNeeded([string]$TargetRoot) {
         created_at_utc = Get-UtcIso
     })
     $statusText = Get-Content -LiteralPath $statusPath -Raw -Encoding UTF8
+    if (-not $statusText.Contains("Stage set version: harness-stage-set-v1.0.3")) {
+        $statusText = $statusText.TrimEnd() + "`nStage set version: harness-stage-set-v1.0.3`n"
+    }
     if (-not $statusText.Contains("Implementation Entry Gate: closed")) {
         $statusText = $statusText.TrimEnd() + "`nImplementation Entry Gate: closed`n"
     }
@@ -579,6 +628,7 @@ function Apply-StageSetMigrationIfNeeded([string]$TargetRoot) {
         $statusText = $statusText.TrimEnd() + "`n`n- harness-stage-set-v1.0.3 migration review required: $legacyStage state is preserved and cannot auto-advance. $blockedTransition`n"
     }
     Write-Utf8NoBom -PathValue $statusPath -Content $statusText
+    Repair-MigratedReadSet -TargetRoot $TargetRoot -Stage $legacyStage
     return $true
 }
 
