@@ -250,6 +250,10 @@ function Copy-HarnessRuntimeFiles {
             Remove-Item -LiteralPath $removePath -Recurse -Force
         }
     }
+    Get-ChildItem -LiteralPath $validatorTarget -Directory -Recurse -Force -Filter "__pycache__" -ErrorAction SilentlyContinue |
+        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force }
+    Get-ChildItem -LiteralPath $validatorTarget -File -Recurse -Force -Include "*.pyc","*.pyo" -ErrorAction SilentlyContinue |
+        ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force }
 }
 
 function Test-RuntimeComplete {

@@ -38,3 +38,14 @@ class ReleaseSurfaceTests(unittest.TestCase):
             self.assertEqual(update.returncode, 0, update.stderr)
             self.assertIn("already_up_to_date", update.stdout)
             self.assertEqual(status.read_text(encoding="utf-8"), before)
+
+    def test_installer_does_not_copy_python_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "project"
+            target.mkdir()
+            result = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ROOT / "install-harness.ps1"), "-Mode", "Install", "-TargetPath", str(target), "-SourcePath", str(ROOT)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for path in target.rglob("*"):
+                rel = path.relative_to(target).as_posix()
+                self.assertNotIn("__pycache__", rel)
+                self.assertFalse(rel.endswith(".pyc"), rel)
