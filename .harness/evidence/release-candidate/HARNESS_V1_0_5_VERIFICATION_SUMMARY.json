@@ -1,0 +1,19 @@
+{
+  "artifact_id": "harness.v1_0_5.verification_summary",
+  "artifact_version": "1.0",
+  "spec_sha256": "8282D85591C1987FB57ABEA4FCBCA870E706E5B95808EE6F774F98561030123C",
+  "source_tests": "pass",
+  "source_tests_command": "python -m unittest discover -s tests/harness_v1_0_5 -v",
+  "public_doctor": "pass",
+  "public_doctor_command": ".\\\\harness.ps1 doctor",
+  "runtime_candidate_doctor": "pass",
+  "runtime_candidate_doctor_command": ".\\\\harness.ps1 doctor -Mode release_candidate",
+  "runtime_surface": "pass",
+  "github_link_install_asset_check": "pass",
+  "secret_scan": "pass",
+  "release_asset_path": "F:\\jjamppong\\.release-worktrees\\harness-runtime-v1.0.5-candidate-assets\\harness-runtime-v1.0.5.zip",
+  "release_asset_sha256": "51dc077e5de06677fe4119350d352003029a6e4d61122e450ff238378cb5adab",
+  "release_manifest_path": "F:\\jjamppong\\.release-worktrees\\harness-runtime-v1.0.5-candidate-assets\\HARNESS_RELEASE_MANIFEST_V1_0_5.json",
+  "release_manifest_sha256": "e486788f8f01b06f1c023ce4fbaaec13fcb06935b8db68044226419d8eddcb04",
+  "ready_for_release_candidate_review": true
+}
