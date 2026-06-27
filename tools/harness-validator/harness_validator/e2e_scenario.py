@@ -23,6 +23,8 @@ STAGE_ARTIFACTS = [
 ]
 
 CONTRACT_BY_STAGE = {stage["stage_id"]: stage["contract_file"] for stage in STAGES}
+ARTIFACT_BY_STAGE = {stage: artifact for stage, artifact, _template in STAGE_ARTIFACTS}
+STAGE_ORDER = [stage for stage, _artifact, _template in STAGE_ARTIFACTS]
 
 
 def write_text(path, text):
@@ -35,11 +37,19 @@ def update_read_set(root, stage, artifact):
     contract_path = f".harness/definitions/stage-contracts/{CONTRACT_BY_STAGE[stage]}"
     if not (Path(root) / contract_path).is_file():
         raise FileNotFoundError(contract_path)
+    previous_artifacts = []
+    for previous_stage in STAGE_ORDER[:STAGE_ORDER.index(stage)]:
+        previous_artifact = ARTIFACT_BY_STAGE[previous_stage]
+        if (Path(root) / previous_artifact).is_file():
+            previous_artifacts.append(previous_artifact)
     payload = {
         "schema_version": "1.0",
         "stage": stage,
+        "stage_set_version": "harness-stage-set-v1.0.3",
+        "artifact_version": "1.0.4",
         "paths": [
             ".harness/current/status/STATUS_KO.md",
+            *previous_artifacts,
             artifact,
             contract_path,
         ],

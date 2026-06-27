@@ -4,7 +4,7 @@ param(
     [ValidateSet("Preview", "Install", "Update", "Repair")]
     [string]$Mode = "Install",
     [string]$ReleaseUrl = "https://github.com/vibedong/jjamppong/releases/latest",
-    [string]$ReleaseTag = "harness-v1.0.3",
+    [string]$ReleaseTag = "harness-v1.0.4",
     [string]$Repository = "vibedong/jjamppong",
     [string]$OutputPreviewPath = "",
     [switch]$Force
@@ -409,7 +409,7 @@ function Invoke-Preview([string]$TargetRoot, [string]$SourceRoot) {
     }
     $preview = [ordered]@{
         schema_version = "1.0"
-        harness_release = "harness-v1.0.3"
+        harness_release = "harness-v1.0.4"
         mode = "Preview"
         target_path = Convert-ToPosixPath ([System.IO.Path]::GetFullPath($TargetRoot))
         target_git_state = Get-GitState $TargetRoot
@@ -437,7 +437,7 @@ function Write-SourceIdentityEvidence([string]$TargetRoot, [string]$ReleaseUrl, 
         normalized_release_url = $normalized
         resolution_mode = if ($normalized) { "github_release_url" } else { "local_source_path" }
         install_mode = $ModeValue
-        release_tag = "harness-v1.0.3"
+        release_tag = "harness-v1.0.4"
         source_archive_sha256 = $null
         resolved_at_utc = Get-UtcIso
     })
@@ -483,7 +483,7 @@ function Write-GitBaselineEvidence([string]$TargetRoot, [bool]$CreateBaselineCom
                 $commit = if ($newHeadResult.code -eq 0 -and $newHeadResult.output.Count -gt 0) { $newHeadResult.output[0] } else { $null }
                 $status = "created"
                 if ($CreateBaselineTag) {
-                    $baselineTag = "harness-install-baseline-v1-0-3"
+                    $baselineTag = "harness-install-baseline-v1-0-4"
                     git -C $TargetRoot tag $baselineTag $commit 2>$null | Out-Null
                 }
                 $nextAction = "verify_remote_before_implementation_entry"
@@ -587,7 +587,7 @@ function Repair-MigratedReadSet([string]$TargetRoot, [string]$Stage) {
     }
     Write-CanonicalJson -PathValue $readSetPath -Payload ([ordered]@{
         artifact_id = "harness.current_read_set"
-        artifact_version = "1.0.3"
+        artifact_version = "1.0.4"
         schema_version = "1.0"
         stage = $Stage
         stage_set_version = "harness-stage-set-v1.0.3"
@@ -662,7 +662,7 @@ function Write-InstalledState {
         $statusText = @(
             '# Harness 상태',
             '',
-            'Harness version: harness-v1.0.3',
+            'Harness version: harness-v1.0.4',
             'Stage set version: harness-stage-set-v1.0.3',
             'Current stage: R01 Product Goal',
             'Implementation Entry Gate: closed',
@@ -676,7 +676,7 @@ function Write-InstalledState {
 
         $readSet = [ordered]@{
             artifact_id = "harness.current_read_set"
-            artifact_version = "1.0.3"
+            artifact_version = "1.0.4"
             schema_version = "1.0"
             stage = "R01"
             stage_set_version = "harness-stage-set-v1.0.3"
@@ -711,7 +711,7 @@ function Write-InstalledState {
 
     $identity = [ordered]@{
         artifact_id = "harness.installed_source_identity"
-        artifact_version = "1.0.3"
+        artifact_version = "1.0.4"
         source_repository = "https://github.com/$Repo"
         release_url = (Get-NormalizedReleaseUrl $UrlValue)
         release_tag = $Tag
@@ -729,7 +729,7 @@ function Write-InstalledState {
 
     $installRecord = [ordered]@{
         artifact_id = "harness.install_record"
-        artifact_version = "1.0.3"
+        artifact_version = "1.0.4"
         install_result = $InstallResult
         install_mode = $ModeValue
         release_tag = $Tag
@@ -817,5 +817,5 @@ if ($Mode -eq "Update" -or $Mode -eq "Repair") {
 Write-GitBaselineEvidence -TargetRoot $targetRoot
 
 Write-Output $result
-Write-Output "Harness 1.0.3 runtime is ready in $targetRoot"
+Write-Output "Harness 1.0.4 runtime is ready in $targetRoot"
 Write-Output "Next: run python tools/harness-validator/run-doctor.py --mode installed-project ."
