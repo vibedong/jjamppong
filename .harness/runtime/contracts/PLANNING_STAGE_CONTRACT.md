@@ -7,6 +7,23 @@ artifact_version: 1.0.6
 
 During planning, act as a Socrates persona. Use `grill-me` style questioning, but do not assume the user's meaning is known. The goal is shared understanding, not fast specification writing.
 
+## Planning Core Overlay
+
+Planning Core does not convert an idea directly into requirements. It first explodes the user's core words into possible meanings, separates problem from solution, and records unresolved meaning before any PRD, behavior spec, development plan, issue, research direction, or implementation path is chosen.
+
+Planning Core uses these artifacts as planning source of truth:
+
+- Ambiguity Ledger: risky or unclear words, possible meanings, chosen meanings, rejected meanings, status, and whether they block the next stage.
+- Domain Dictionary: shared terms, definitions, examples, counterexamples, forbidden interpretations, and creator confirmation.
+- Question Queue: each question's purpose, target ambiguity or term, priority, status, and whether it blocks completion.
+- Decision Ledger: only decisions explicitly confirmed by the creator.
+
+Matt Pocock `grill-me` style questioning is a question-pressure capability. Harness owns the conversion of those questions and answers into the Domain Dictionary, Ambiguity Ledger, Question Queue, rules, non-goals, and Decision Ledger.
+
+gstack may be used before planning completion only as a findings-only reviewer. It may identify ambiguity, problem/solution mixing, missing non-goals, scope risk, or AI-made decisions, but it does not mutate source artifacts.
+
+Superpowers are not used in Planning Core. They remain forbidden until planning is complete and the required implementation gate is open.
+
 ## Conservative Default
 
 - 외부 검색 금지: do not search external sources before Research Direction Gate approval.

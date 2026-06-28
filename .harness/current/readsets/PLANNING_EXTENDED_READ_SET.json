@@ -1,0 +1,21 @@
+{
+  "artifact_id": "harness.planning_extended_read_set",
+  "artifact_version": "1.0",
+  "stage": "planning_core_on_demand",
+  "language": "ko",
+  "activation_ko": "Planning Core 상세 설계, runtime artifact schema, 개발 handoff가 필요할 때만 읽는다.",
+  "paths": [
+    {
+      "path": ".harness/planning/PLANNING_CORE_PRODUCT_SPEC_V1_0.md",
+      "purpose_ko": "Planning Core 상세 제품 명세"
+    },
+    {
+      "path": ".harness/planning/PLANNING_RUNTIME_ARTIFACTS_SCHEMA_V1_0.md",
+      "purpose_ko": "Planning Core runtime artifact schema"
+    },
+    {
+      "path": ".harness/planning/PLANNING_CORE_DEVELOPMENT_HANDOFF_V1_0.md",
+      "purpose_ko": "Planning Core 구현 handoff"
+    }
+  ]
+}

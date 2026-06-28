@@ -1,0 +1,38 @@
+{
+  "artifact_id": "harness.planning_core_file_placement_map",
+  "artifact_version": "1.0",
+  "source_root": "work/",
+  "target_root": "harness/",
+  "placements": [
+    {
+      "source": "work/SOCRATIC_DOMAIN_PLANNER_PERSONA_V1_0.md",
+      "target": "harness/.harness/planning/SOCRATIC_DOMAIN_PLANNER_PERSONA_V1_0.md",
+      "mode": "copied"
+    },
+    {
+      "source": "work/PLANNING_CORE_PRODUCT_SPEC_V1_0.md",
+      "target": "harness/.harness/planning/PLANNING_CORE_PRODUCT_SPEC_V1_0.md",
+      "mode": "copied"
+    },
+    {
+      "source": "work/PLANNING_RUNTIME_ARTIFACTS_SCHEMA_V1_0.md",
+      "target": "harness/.harness/planning/PLANNING_RUNTIME_ARTIFACTS_SCHEMA_V1_0.md",
+      "mode": "copied"
+    },
+    {
+      "source": "work/PLANNING_CORE_DEVELOPMENT_HANDOFF_V1_0.md",
+      "target": "harness/.harness/planning/PLANNING_CORE_DEVELOPMENT_HANDOFF_V1_0.md",
+      "mode": "copied"
+    },
+    {
+      "source": "work/CODEX_GOAL_PLANNING_CORE_DESIGN_LOCK.md",
+      "target": "harness/.harness/planning/CODEX_GOAL_PLANNING_CORE_DESIGN_LOCK.md",
+      "mode": "copied"
+    }
+  ],
+  "merge_notes": [
+    "work/AGENTS.md was not copied over harness/AGENTS.md.",
+    "harness/AGENTS.md remains the short runtime router.",
+    "Planning details are owned by .harness/planning/ documents."
+  ]
+}
