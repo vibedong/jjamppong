@@ -38,7 +38,7 @@ Planning Core 세부 규칙은 AGENTS.md가 아니라 `.harness/planning/` 문�
 
 `PLANNING_CORE_PRODUCT_SPEC_V1_0.md`와 `PLANNING_RUNTIME_ARTIFACTS_SCHEMA_V1_0.md`를 기본 read set에 함께 넣으면 20KB 제한을 초과하므로 `.harness/current/readsets/PLANNING_EXTENDED_READ_SET.json`으로 분리했다.
 
-기본 read set 총량은 11,627 bytes다. 제한은 20,480 bytes다.
+기본 read set 총량은 11,855 bytes다. 제한은 20,480 bytes다.
 
 ## Gate 보존
 
@@ -88,7 +88,7 @@ Planning Core 세부 규칙은 AGENTS.md가 아니라 `.harness/planning/` 문�
 최종 결과:
 
 - overall_status: pass
-- read_set_total_bytes: 11627
+- read_set_total_bytes: 11855
 - read_set_violations: []
 - coverage_violations: []
 - source_identity_violations: []
