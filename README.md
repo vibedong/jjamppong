@@ -40,6 +40,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install-harness.ps1 -GitHu
 
 사용자가 제품 아이디어를 말하면 Harness는 바로 리서치하거나 구현하지 않습니다. 먼저 `.harness/runtime/contracts/PLANNING_STAGE_CONTRACT.md`에 따라 Socrates persona로 사용자의 의미를 확인하고, Shared Meaning Lock이 명시적으로 기록된 뒤에만 다음 gate로 이동합니다.
 
+## Planning Core
+
+사용자가 아이디어를 말하면 Harness는 바로 PRD나 구현으로 가지 않습니다. Socratic Domain Planner가 핵심 단어와 모호성을 먼저 확인하고, 도메인 사전과 모호성 장부를 기반으로 기획합니다.
+
+Matt Pocock 계열은 질문 압박 capability로만 사용하고, gstack은 planning completion 전 findings-only 검토로만 사용합니다. Superpowers는 Planning Core에서 실행하지 않습니다.
+
 ## 보안
 
 API key, password, authentication token, recovery code 같은 secret은 Git이나 일반 프로젝트 문서에 저장하지 않습니다.

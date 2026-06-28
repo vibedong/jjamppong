@@ -1,0 +1,29 @@
+{
+  "artifact_id": "harness.runtime.routing.skill_routing_for_planning",
+  "artifact_version": "1.0",
+  "planning_discovery": {
+    "preferred_skill_family": "mattpocock",
+    "preferred_capability": "grill-me style questioning",
+    "fallback": "harness_native_socratic_domain_planner",
+    "run_record_required": true,
+    "mutation_allowed": false,
+    "superpowers_forbidden_during_planning": true
+  },
+  "planning_review": {
+    "preferred_skill_family": "gstack",
+    "preferred_capability": "findings-only planning review",
+    "fallback": "harness_native_findings_only_review",
+    "run_record_required": true,
+    "mutation_allowed": false,
+    "superpowers_forbidden_during_planning": true
+  },
+  "implementation": {
+    "preferred_skill_family": "superpowers",
+    "preferred_capability": "development execution after planning completion",
+    "fallback": "block_until_planning_complete_and_implementation_gate_open",
+    "run_record_required": true,
+    "mutation_allowed": false,
+    "allowed_during_planning_core": false,
+    "superpowers_forbidden_during_planning": true
+  }
+}

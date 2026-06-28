@@ -20,7 +20,17 @@
     {
       "path": ".harness/runtime/contracts/PLANNING_STAGE_CONTRACT.md",
       "purpose_ko": "기획 단계 행동 계약"
+    },
+    {
+      "path": ".harness/planning/SOCRATIC_DOMAIN_PLANNER_PERSONA_V1_0.md",
+      "purpose_ko": "Planning Core 기본 소크라테스식 도메인 기획자 persona"
+    },
+    {
+      "path": ".harness/runtime/routing/SKILL_ROUTING_FOR_PLANNING_V1_0.json",
+      "purpose_ko": "Planning Core skill routing"
     }
   ],
+  "on_demand_extended_read_set": ".harness/current/readsets/PLANNING_EXTENDED_READ_SET.json",
+  "budget_decision_ko": "PLANNING_CORE_PRODUCT_SPEC_V1_0.md와 PLANNING_RUNTIME_ARTIFACTS_SCHEMA_V1_0.md는 기본 read set에 함께 넣으면 20KB 제한을 초과하므로 확장 read set으로 분리한다.",
   "exception_required_if_over_budget": true
 }
